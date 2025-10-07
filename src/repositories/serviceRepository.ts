@@ -14,15 +14,15 @@ export interface CreateServiceData {
   description?: string;
   businessName: string;
   serviceTypeId: string;
-  pricePerUnit: number | string;
-  deliveryCostPerKm: number | string;
-  minimumOrder?: number | string;
+  pricePerUnit: number;
+  deliveryCostPerKm: number;
+  minimumOrder?: number;
   businessHours: Prisma.InputJsonValue;
-  expectedDeliveryTime: number | string;
+  expectedDeliveryTime: number;
   address: string;
-  longitude: number | string;
-  latitude: number | string;
-  serviceRadius: number | string;
+  longitude: number;
+  latitude: number;
+  serviceRadius: number;
   providerId: string;
   status?: ServiceStatus;
   verified?: boolean;
@@ -30,11 +30,11 @@ export interface CreateServiceData {
   vehicleIds?: string[];
   businessVerificationId?: string;
   Contact?: string;
-  baseServicePrice?: number | string;
-  lgaId?: number | string;
-  cityId?: number | string;
-  stateId?: number | string;
-  countryId?: number | string;
+  baseServicePrice?: number;
+  lgaId?: number;
+  cityId?: number;
+  stateId?: number;
+  countryId?: number;
 }
 
 export interface UpdateServiceData {
@@ -42,23 +42,23 @@ export interface UpdateServiceData {
   description?: string;
   businessName?: string;
   serviceTypeId?: string;
-  pricePerUnit?: number | string;
-  deliveryCostPerKm?: number | string;
-  minimumOrder?: number | string;
+  pricePerUnit?: number;
+  deliveryCostPerKm?: number;
+  minimumOrder?: number;
   businessHours?: Prisma.InputJsonValue;
-  expectedDeliveryTime?: number | string;
+  expectedDeliveryTime?: number;
   address?: string;
-  longitude?: number | string;
-  latitude?: number | string;
-  serviceRadius?: number | string;
+  longitude?: number;
+  latitude?: number;
+  serviceRadius?: number;
   status?: ServiceStatus;
   verified?: boolean;
   Contact?: string;
-  baseServicePrice?: number | string;
-  lgaId?: number | string;
-  cityId?: number | string;
-  stateId?: number | string;
-  countryId?: number | string;
+  baseServicePrice?: number;
+  lgaId?: number;
+  cityId?: number;
+  stateId?: number;
+  countryId?: number;
 }
 
 export interface ReviewData {
@@ -232,18 +232,12 @@ export class ServiceRepository {
           isActive: false,
           pricePerUnit: new Prisma.Decimal(processedServiceData.pricePerUnit),
           deliveryCost: new Prisma.Decimal(processedServiceData.deliveryCostPerKm),
-          minimumOrder: processedServiceData.minimumOrder || 1,
+          minimumOrder: processedServiceData.minimumOrder ?? 1,
           businessHours: processedServiceData.businessHours,
           expectedDeliveryTime: processedServiceData.expectedDeliveryTime,
           address: processedServiceData.address,
           longitude: processedServiceData.longitude,
           latitude: processedServiceData.latitude,
-          location: processedServiceData.latitude && processedServiceData.longitude
-            ? {
-                type: 'Point',
-                coordinates: [processedServiceData.longitude, processedServiceData.latitude],
-              }
-            : undefined,
           serviceRadius: processedServiceData.serviceRadius,
           providerId: processedServiceData.providerId,
           providerRole,
@@ -251,10 +245,10 @@ export class ServiceRepository {
           businessVerificationId: processedServiceData.businessVerificationId || null,
           Contact: processedServiceData.Contact || null,
           businessName,
-          lgaId: processedServiceData.lgaId || null,
-          cityId: processedServiceData.cityId || null,
-          stateId: processedServiceData.stateId || null,
-          countryId: processedServiceData.countryId || null,
+          lgaId: processedServiceData.lgaId ?? null,
+          cityId: processedServiceData.cityId ?? null,
+          stateId: processedServiceData.stateId ?? null,
+          countryId: processedServiceData.countryId ?? null,
           licenses: processedServiceData.licenseIds && processedServiceData.licenseIds.length > 0
             ? { connect: processedServiceData.licenseIds.map(id => ({ id })) }
             : undefined,
@@ -268,6 +262,15 @@ export class ServiceRepository {
           businessVerification: true,
         },
       });
+
+      // Set location using raw SQL for PostGIS compatibility
+      if (processedServiceData.latitude && processedServiceData.longitude) {
+        await prisma.$executeRaw`
+          UPDATE "Services"
+          SET location = ST_SetSRID(ST_MakePoint(${processedServiceData.longitude}, ${processedServiceData.latitude}), 4326)::geography
+          WHERE id = ${service.id}
+        `;
+      }
 
       return service;
     } catch (error: unknown) {
@@ -307,18 +310,6 @@ export class ServiceRepository {
         throw ApiError.badRequest('Invalid status', ErrorCodes.VALIDATION_ERROR, { status: updateData.status });
       }
 
-      // Fetch business verification to get businessName if businessVerificationId is updated
-      let businessName = updateData.businessName;
-      if (updateData.businessVerificationId) {
-        const businessVerification = await prisma.businessVerification.findUnique({
-          where: { id: updateData.businessVerificationId },
-        });
-        if (!businessVerification) {
-          throw ApiError.badRequest('Invalid businessVerificationId', ErrorCodes.NOT_FOUND, { businessVerificationId: updateData.businessVerificationId });
-        }
-        businessName = businessVerification.businessName; // Override with businessVerification businessName
-      }
-
       // Prepare update data with Prisma.Decimal conversion
       const updatePayload: any = {
         name: updateData.name,
@@ -332,16 +323,9 @@ export class ServiceRepository {
         address: updateData.address,
         longitude: updateData.longitude,
         latitude: updateData.latitude,
-        location: updateData.latitude !== undefined && updateData.longitude !== undefined
-          ? {
-              type: 'Point',
-              coordinates: [updateData.longitude, updateData.latitude],
-            }
-          : undefined,
         serviceRadius: updateData.serviceRadius,
         Contact: updateData.Contact,
-        businessVerificationId: updateData.businessVerificationId,
-        businessName,
+        businessName: updateData.businessName,
         lgaId: updateData.lgaId,
         cityId: updateData.cityId,
         stateId: updateData.stateId,
@@ -362,6 +346,15 @@ export class ServiceRepository {
           vehicles: true,
         },
       });
+
+      // Update location using raw SQL if latitude and longitude are provided
+      if (updateData.latitude !== undefined && updateData.longitude !== undefined) {
+        await prisma.$executeRaw`
+          UPDATE "Services"
+          SET location = ST_SetSRID(ST_MakePoint(${updateData.longitude}, ${updateData.latitude}), 4326)::geography
+          WHERE id = ${id}
+        `;
+      }
 
       return service;
     } catch (error: unknown) {
@@ -387,10 +380,10 @@ export class ServiceRepository {
         }
         if (filters.serviceTypeId) where.serviceTypeId = filters.serviceTypeId;
         if (filters.verified !== undefined) where.verified = filters.verified === 'true';
-        if (filters.lgaId) where.lgaId = parseInt(filters.lgaId);
-        if (filters.cityId) where.cityId = parseInt(filters.cityId);
-        if (filters.stateId) where.stateId = parseInt(filters.stateId);
-        if (filters.countryId) where.countryId = parseInt(filters.countryId);
+        if (filters.lgaId) where.lgaId = Number(filters.lgaId);
+        if (filters.cityId) where.cityId = Number(filters.cityId);
+        if (filters.stateId) where.stateId = Number(filters.stateId);
+        if (filters.countryId) where.countryId = Number(filters.countryId);
       }
 
       const total = await prisma.services.count({ where });
