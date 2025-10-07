@@ -1,0 +1,170 @@
+model ElectricityOrder {
+  id             String              @id @default(uuid()) @db.Uuid
+  userId         String              @db.Uuid
+  user           User                @relation(fields: [userId], references: [id], onDelete: Cascade)
+  providerId     Int
+  provider       ElectricityProvider @relation("ElectricityOrders", fields: [providerId], references: [id])
+  meterNumber    String              @db.VarChar(255)
+  paymentAmount  Float
+  paymentMethod  PaymentMethod
+  meterType      String              @default("prepaid")
+  token          String?             @db.Text
+  status         TransactionStatus   @default(PENDING)
+  serviceFee     Float?
+  voucherDiscount   Float? 
+  pointsDiscount    Float? 
+  flutterwaveFee Float?
+  monnifyfee      Float?
+  vat            Float?
+  transactionRef String?             @db.VarChar(255)
+  createdAt      DateTime            @default(now())
+  updatedAt      DateTime            @updatedAt
+  transactions   WalletTransaction[] @relation("ElectricityOrderTransactions")
+  payments       Payment[]           @relation("ElectricityPayments") // Changed to Payment[] for one-to-many
+  orderId        String? @db.Uuid
+  order           Order?              @relation("OrderToElectricityOrders", fields: [orderId], references: [id])
+
+  @@index([createdAt])
+  @@schema("public")
+}
+
+
+enum Role {
+  CUSTOMER
+  DELIVERY_AGENT
+  
+  
+  VENDOR
+  ADMIN
+  MANAGER
+  SUPERVISOR
+  FINANCE_MANAGER
+  STAFF
+  SERVICE_REP
+
+  @@map("Role")
+  @@schema("public")
+}
+
+
+  DIESEL
+  PETROL
+  GAS
+  ELECTRICITY
+  GAS_SUPPLY
+  PETROL_SUPPLY
+  DIESEL_SUPPLY
+  ELECTRICITY_SUPPLY
+
+
+
+
+
+  model ElectricityProvider {
+  id                      Int                 @id @default(autoincrement())
+  name                    String              @unique
+  flutterwave_biller_code String              @unique
+  prepaid_item_code       String?
+  postpaid_item_code      String?
+  serviceFee              Int                 @default(500)
+  payments                Payment[]           @relation("ProviderPayments")
+  transactionRecords      Transaction[]
+  walletTransactions      WalletTransaction[] @relation("WalletToElectricityProvider")
+  serviceOrders           ServiceOrder[]      @relation("ElectricityOrders")
+  tariffPlan              String?
+
+  @@schema("public")
+}
+
+model Transaction {
+  id         Int                 @id @default(autoincrement())
+  providerId Int
+  provider   ElectricityProvider @relation(fields: [providerId], references: [id])
+  amount     Decimal             @db.Decimal(10, 2)
+  status     TransactionStatus   @default(PENDING)
+  createdAt  DateTime            @default(now())
+  reference  String?             @db.VarChar(54)
+
+  @@schema("public")
+}
+
+
+
+
+model Service {
+  id                     String                                 @id @default(uuid()) @db.Uuid
+  name                   String
+  description            String?                                @db.Text
+  serviceTypeId          String                                 @db.Uuid
+  serviceType            ServiceType                            @relation("ServiceTypeToServices", fields: [serviceTypeId], references: [id])
+  status                 ServiceStatus                          @default(PENDING_VERIFICATION)
+  isActive               Boolean                                @default(false) // New field for visibility
+  pricePerUnit           Decimal                                @db.Decimal(10, 2)
+  deliveryCost           Decimal?                               @db.Decimal(10, 2)
+  minimumOrder           Int                                    @default(1)
+  maximumOrder           Int?
+  paymentOptions         String?                                @db.VarChar(255)
+  Contact                String?                                @db.VarChar(255)
+  businessHours          Json?
+  expectedDeliveryTime   Int?
+  address                String?                                @db.Text
+  logoUrl                String?                                @db.Text
+  longitude              Float?
+  latitude               Float?
+  location               Unsupported("geography(Point, 4326)")?
+  serviceRadius          Float?
+  countryId              Int?
+  stateId                Int?
+  cityId                 Int?
+  lgaId                  Int?
+  country                Country?                               @relation("ServiceToCountry", fields: [countryId], references: [id])
+  state                  State?                                 @relation("ServiceToState", fields: [stateId], references: [id])
+  city                   City?                                  @relation("ServiceToCity", fields: [cityId], references: [id])
+  lga                    Lga?                                   @relation("ServiceToLga", fields: [lgaId], references: [id])
+  providerId             String                                 @db.Uuid
+  provider               User                                   @relation("ProviderServices", fields: [providerId], references: [id], onDelete: Cascade)
+  providerRole           String                                 @db.VarChar(50)
+  businessVerificationId String?                                @db.Uuid
+  businessVerification   BusinessVerification?                  @relation("ServiceToBusinessVerification", fields: [businessVerificationId], references: [id], onDelete: Restrict)
+  deliveryRepId          String?                                @db.Uuid
+  deliveryRep            Profile?                               @relation("DeliveryRepService", fields: [deliveryRepId], references: [id])
+  agentId                String?                                @db.Uuid
+  agent                  User?                                  @relation("AgentService", fields: [agentId], references: [id])
+  categoryId             String?                                @db.Uuid
+  category               Category?                              @relation("ServiceToCategory", fields: [categoryId], references: [id])
+  verified               Boolean                                @default(false)
+  verifiedAt             DateTime?
+  verificationStatus     VerificationStatus                     @default(PENDING)
+  avgRating              Float?                                 @default(0.0)
+  ratingCount            Int?                                   @default(0)
+  serviceOrders          ServiceOrder[]                         @relation("ServiceToServiceOrders")
+  serviceReviews         ServiceReview[]
+  billerCode             String?                                @db.VarChar(50)
+  itemCode               String?                                @db.VarChar(50)
+  destinationBankCode    String?                                @db.VarChar(50)
+  destinationAccountNumber String?                              @db.VarChar(50)
+  serviceVerifications   ServiceVerification[]                  @relation("ServiceToVerifications")
+  disputes               Dispute[]                              @relation("ServiceDisputes")
+  zones                  Zone[]                                 @relation("ServiceToZones")
+  licenses               License[]                              @relation("ServiceToLicenses")
+  vehicles               Vehicle[]                              @relation("ServiceToVehicles")
+  vendorId               String?                                @db.Uuid
+  vendor                 Profile?                               @relation("VendorServices", fields: [vendorId], references: [id], onDelete: SetNull)
+  reviews                OrderReview[]                          @relation("ServiceReviews")
+  complaints             Complaint[]                            @relation("ServiceComplaints")
+  createdAt              DateTime                               @default(now())
+  updatedAt              DateTime                               @updatedAt
+  businessName           String?                                @db.VarChar(255)
+
+  @@index([providerId])
+  @@index([providerRole])
+  @@index([businessVerificationId])
+  @@index([serviceTypeId])
+  @@index([status])
+  @@index([isActive]) // New index for isActive
+  @@index([categoryId])
+  @@index([agentId])
+  @@index([lgaId])
+  @@index([vendorId])
+  @@schema("public")
+}

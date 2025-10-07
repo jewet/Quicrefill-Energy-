@@ -1,0 +1,94 @@
+{"level":"error","message":"Failed to initialize email transporter: Missing credentials for \"PLAIN\"","timestamp":"2025-09-24 07:45:18"}
+{"level":"error","message":"Failed to initialize email transporter: Missing credentials for \"PLAIN\"","timestamp":"2025-09-24 07:45:24"}
+{"level":"error","message":"Failed to initialize email transporter: Missing credentials for \"PLAIN\"","timestamp":"2025-09-24 07:45:24"}
+{"level":"error","message":"Failed to initialize email transporter: Missing credentials for \"PLAIN\"","timestamp":"2025-09-24 07:45:26"}
+{"level":"error","message":"Failed to initialize email transporter: Missing credentials for \"PLAIN\"","timestamp":"2025-09-24 07:45:26"}
+{"level":"info","message":"Email transporter connections closed","timestamp":"2025-09-24 07:46:19"}
+{"level":"info","message":"SMTP transporter initialized successfully with connection pooling","timestamp":"2025-09-24 07:51:16"}
+{"level":"info","message":"SMTP transporter initialized successfully with connection pooling","timestamp":"2025-09-24 07:51:24"}
+{"level":"info","message":"SMTP transporter initialized successfully with connection pooling","timestamp":"2025-09-24 07:51:25"}
+{"level":"info","message":"Email transporter connections closed","timestamp":"2025-09-24 08:00:01"}
+{"level":"info","message":"Email transporter connections closed","timestamp":"2025-09-24 08:00:01"}
+{"level":"info","message":"Email transporter connections closed","timestamp":"2025-09-24 08:00:01"}
+{"level":"info","message":"SMTP transporter initialized successfully with connection pooling","timestamp":"2025-09-24 08:04:57"}
+{"level":"info","message":"SMTP transporter initialized successfully with connection pooling","timestamp":"2025-09-24 08:05:04"}
+{"level":"info","message":"SMTP transporter initialized successfully with connection pooling","timestamp":"2025-09-24 08:05:04"}
+{"host":"smtp.gmail.com","level":"info","maxConnections":5,"message":"Initializing SMTP transporter","pool":true,"port":587,"secure":false,"timestamp":"2025-09-24 08:06:32","user":"astralearnia@gmail.com"}
+{"level":"info","message":"SMTP transporter initialized successfully with connection pooling","timestamp":"2025-09-24 08:06:34"}
+{"host":"smtp.gmail.com","level":"info","maxConnections":5,"message":"Initializing SMTP transporter","pool":true,"port":587,"secure":false,"timestamp":"2025-09-24 08:06:41","user":"astralearnia@gmail.com"}
+{"host":"smtp.gmail.com","level":"info","maxConnections":5,"message":"Initializing SMTP transporter","pool":true,"port":587,"secure":false,"timestamp":"2025-09-24 08:06:41","user":"astralearnia@gmail.com"}
+{"level":"info","message":"SMTP transporter initialized successfully with connection pooling","timestamp":"2025-09-24 08:06:42"}
+{"level":"info","message":"SMTP transporter initialized successfully with connection pooling","timestamp":"2025-09-24 08:06:42"}
+{"level":"info","message":"Email transporter connections closed","timestamp":"2025-09-24 08:06:47"}
+{"host":"smtp.gmail.com","level":"info","maxConnections":5,"message":"Initializing SMTP transporter","pool":true,"port":587,"secure":false,"timestamp":"2025-09-24 08:06:57","user":"astralearnia@gmail.com"}
+{"level":"info","message":"SMTP transporter initialized successfully with connection pooling","timestamp":"2025-09-24 08:06:59"}
+{"host":"smtp.gmail.com","level":"info","maxConnections":5,"message":"Initializing SMTP transporter","pool":true,"port":587,"secure":false,"timestamp":"2025-09-24 08:07:03","user":"astralearnia@gmail.com"}
+{"host":"smtp.gmail.com","level":"info","maxConnections":5,"message":"Initializing SMTP transporter","pool":true,"port":587,"secure":false,"timestamp":"2025-09-24 08:07:03","user":"astralearnia@gmail.com"}
+{"level":"info","message":"SMTP transporter initialized successfully with connection pooling","timestamp":"2025-09-24 08:07:05"}
+{"level":"info","message":"SMTP transporter initialized successfully with connection pooling","timestamp":"2025-09-24 08:07:05"}
+{"level":"info","message":"Email transporter connections closed","timestamp":"2025-09-24 08:07:41"}
+{"level":"info","message":"Email transporter connections closed","timestamp":"2025-09-24 08:07:41"}
+{"level":"info","message":"Email transporter connections closed","timestamp":"2025-09-24 08:07:41"}
+{"host":"smtp.gmail.com","level":"info","maxConnections":5,"message":"Initializing SMTP transporter","pool":true,"port":587,"secure":false,"timestamp":"2025-09-24 08:08:10","user":"astralearnia@gmail.com"}
+{"level":"info","message":"SMTP transporter initialized successfully with connection pooling","timestamp":"2025-09-24 08:08:12"}
+{"host":"smtp.gmail.com","level":"info","maxConnections":5,"message":"Initializing SMTP transporter","pool":true,"port":587,"secure":false,"timestamp":"2025-09-24 08:08:16","user":"astralearnia@gmail.com"}
+{"host":"smtp.gmail.com","level":"info","maxConnections":5,"message":"Initializing SMTP transporter","pool":true,"port":587,"secure":false,"timestamp":"2025-09-24 08:08:17","user":"astralearnia@gmail.com"}
+{"level":"info","message":"SMTP transporter initialized successfully with connection pooling","timestamp":"2025-09-24 08:08:18"}
+{"level":"info","message":"SMTP transporter initialized successfully with connection pooling","timestamp":"2025-09-24 08:08:18"}
+{"host":"smtp.gmail.com","level":"info","maxConnections":5,"message":"Initializing SMTP transporter","pool":true,"port":587,"secure":false,"timestamp":"2025-09-24 08:28:34","user":"astralearnia@gmail.com"}
+{"level":"info","message":"SMTP transporter initialized successfully with connection pooling","timestamp":"2025-09-24 08:28:36"}
+{"host":"smtp.gmail.com","level":"info","maxConnections":5,"message":"Initializing SMTP transporter","pool":true,"port":587,"secure":false,"timestamp":"2025-09-24 08:28:44","user":"astralearnia@gmail.com"}
+{"host":"smtp.gmail.com","level":"info","maxConnections":5,"message":"Initializing SMTP transporter","pool":true,"port":587,"secure":false,"timestamp":"2025-09-24 08:28:44","user":"astralearnia@gmail.com"}
+{"level":"info","message":"SMTP transporter initialized successfully with connection pooling","timestamp":"2025-09-24 08:28:45"}
+{"level":"info","message":"SMTP transporter initialized successfully with connection pooling","timestamp":"2025-09-24 08:28:45"}
+{"host":"smtp.gmail.com","level":"info","maxConnections":5,"message":"Initializing SMTP transporter","pool":true,"port":587,"secure":false,"timestamp":"2025-09-24 08:38:54","user":"astralearnia@gmail.com"}
+{"level":"info","message":"SMTP transporter initialized successfully with connection pooling","timestamp":"2025-09-24 08:38:57"}
+{"host":"smtp.gmail.com","level":"info","maxConnections":5,"message":"Initializing SMTP transporter","pool":true,"port":587,"secure":false,"timestamp":"2025-09-24 08:39:03","user":"astralearnia@gmail.com"}
+{"host":"smtp.gmail.com","level":"info","maxConnections":5,"message":"Initializing SMTP transporter","pool":true,"port":587,"secure":false,"timestamp":"2025-09-24 08:39:03","user":"astralearnia@gmail.com"}
+{"level":"info","message":"SMTP transporter initialized successfully with connection pooling","timestamp":"2025-09-24 08:39:05"}
+{"level":"info","message":"SMTP transporter initialized successfully with connection pooling","timestamp":"2025-09-24 08:39:05"}
+{"host":"smtp.gmail.com","level":"info","maxConnections":5,"message":"Initializing SMTP transporter","pool":true,"port":587,"secure":false,"timestamp":"2025-09-24 08:41:10","user":"astralearnia@gmail.com"}
+{"level":"info","message":"SMTP transporter initialized successfully with connection pooling","timestamp":"2025-09-24 08:41:12"}
+{"host":"smtp.gmail.com","level":"info","maxConnections":5,"message":"Initializing SMTP transporter","pool":true,"port":587,"secure":false,"timestamp":"2025-09-24 08:41:19","user":"astralearnia@gmail.com"}
+{"host":"smtp.gmail.com","level":"info","maxConnections":5,"message":"Initializing SMTP transporter","pool":true,"port":587,"secure":false,"timestamp":"2025-09-24 08:41:19","user":"astralearnia@gmail.com"}
+{"level":"info","message":"SMTP transporter initialized successfully with connection pooling","timestamp":"2025-09-24 08:41:21"}
+{"level":"info","message":"SMTP transporter initialized successfully with connection pooling","timestamp":"2025-09-24 08:41:21"}
+{"level":"info","message":"Email transporter connections closed","timestamp":"2025-09-24 08:41:56"}
+{"host":"smtp.gmail.com","level":"info","maxConnections":5,"message":"Initializing SMTP transporter","pool":true,"port":587,"secure":false,"timestamp":"2025-09-24 08:42:05","user":"astralearnia@gmail.com"}
+{"level":"info","message":"SMTP transporter initialized successfully with connection pooling","timestamp":"2025-09-24 08:43:05"}
+{"host":"smtp.gmail.com","level":"info","maxConnections":5,"message":"Initializing SMTP transporter","pool":true,"port":587,"secure":false,"timestamp":"2025-09-24 08:43:10","user":"astralearnia@gmail.com"}
+{"host":"smtp.gmail.com","level":"info","maxConnections":5,"message":"Initializing SMTP transporter","pool":true,"port":587,"secure":false,"timestamp":"2025-09-24 08:43:10","user":"astralearnia@gmail.com"}
+{"level":"info","message":"SMTP transporter initialized successfully with connection pooling","timestamp":"2025-09-24 08:43:20"}
+{"level":"info","message":"SMTP transporter initialized successfully with connection pooling","timestamp":"2025-09-24 08:43:20"}
+{"level":"info","message":"Email transporter connections closed","timestamp":"2025-09-24 08:43:31"}
+{"level":"info","message":"Email transporter connections closed","timestamp":"2025-09-24 08:43:31"}
+{"level":"info","message":"Email transporter connections closed","timestamp":"2025-09-24 08:43:31"}
+{"host":"smtp.gmail.com","level":"info","maxConnections":5,"message":"Initializing SMTP transporter","pool":true,"port":587,"secure":false,"timestamp":"2025-09-24 08:43:58","user":"astralearnia@gmail.com"}
+{"level":"info","message":"SMTP transporter initialized successfully with connection pooling","timestamp":"2025-09-24 08:43:59"}
+{"host":"smtp.gmail.com","level":"info","maxConnections":5,"message":"Initializing SMTP transporter","pool":true,"port":587,"secure":false,"timestamp":"2025-09-24 08:44:04","user":"astralearnia@gmail.com"}
+{"host":"smtp.gmail.com","level":"info","maxConnections":5,"message":"Initializing SMTP transporter","pool":true,"port":587,"secure":false,"timestamp":"2025-09-24 08:44:04","user":"astralearnia@gmail.com"}
+{"level":"info","message":"SMTP transporter initialized successfully with connection pooling","timestamp":"2025-09-24 08:44:06"}
+{"level":"info","message":"SMTP transporter initialized successfully with connection pooling","timestamp":"2025-09-24 08:44:06"}
+{"host":"smtp.gmail.com","level":"info","maxConnections":5,"message":"Initializing SMTP transporter","pool":true,"port":587,"secure":false,"timestamp":"2025-09-25 19:32:15","user":"astralearnia@gmail.com"}
+{"level":"info","message":"Email transporter connections closed","timestamp":"2025-09-25 19:32:18"}
+{"host":"smtp.gmail.com","level":"info","maxConnections":5,"message":"Initializing SMTP transporter","pool":true,"port":587,"secure":false,"timestamp":"2025-09-25 19:32:29","user":"astralearnia@gmail.com"}
+{"level":"error","message":"Failed to initialize email transporter: connect ETIMEDOUT 142.251.168.109:587","stack":"Error: connect ETIMEDOUT 142.251.168.109:587\n    at TCPConnectWrap.afterConnect [as oncomplete] (node:net:1610:16)","timestamp":"2025-09-25 19:33:44"}
+{"host":"smtp.gmail.com","level":"info","maxConnections":5,"message":"Initializing SMTP transporter","pool":true,"port":587,"secure":false,"timestamp":"2025-09-25 19:33:49","user":"astralearnia@gmail.com"}
+{"host":"smtp.gmail.com","level":"info","maxConnections":5,"message":"Initializing SMTP transporter","pool":true,"port":587,"secure":false,"timestamp":"2025-09-25 19:33:49","user":"astralearnia@gmail.com"}
+{"level":"error","message":"Failed to initialize email transporter: connect ETIMEDOUT 142.251.168.109:587","stack":"Error: connect ETIMEDOUT 142.251.168.109:587\n    at TCPConnectWrap.afterConnect [as oncomplete] (node:net:1610:16)","timestamp":"2025-09-25 19:35:04"}
+{"level":"error","message":"Failed to initialize email transporter: connect ETIMEDOUT 142.251.168.109:587","stack":"Error: connect ETIMEDOUT 142.251.168.109:587\n    at TCPConnectWrap.afterConnect [as oncomplete] (node:net:1610:16)","timestamp":"2025-09-25 19:35:04"}
+{"host":"smtp.gmail.com","level":"info","maxConnections":5,"message":"Initializing SMTP transporter","pool":true,"port":587,"secure":false,"timestamp":"2025-09-25 19:35:05","user":"astralearnia@gmail.com"}
+{"host":"smtp.gmail.com","level":"info","maxConnections":5,"message":"Initializing SMTP transporter","pool":true,"port":587,"secure":false,"timestamp":"2025-09-25 19:35:05","user":"astralearnia@gmail.com"}
+{"level":"info","message":"Email transporter connections closed","timestamp":"2025-09-25 19:35:40"}
+{"level":"info","message":"Email transporter connections closed","timestamp":"2025-09-25 19:35:40"}
+{"level":"info","message":"Email transporter connections closed","timestamp":"2025-09-25 19:35:40"}
+{"host":"smtp.gmail.com","level":"info","maxConnections":5,"message":"Initializing SMTP transporter","pool":true,"port":587,"secure":false,"timestamp":"2025-09-25 19:36:03","user":"astralearnia@gmail.com"}
+{"level":"error","message":"Failed to initialize email transporter: connect ETIMEDOUT 142.251.168.109:587","stack":"Error: connect ETIMEDOUT 142.251.168.109:587\n    at TCPConnectWrap.afterConnect [as oncomplete] (node:net:1610:16)","timestamp":"2025-09-25 19:37:18"}
+{"host":"smtp.gmail.com","level":"info","maxConnections":5,"message":"Initializing SMTP transporter","pool":true,"port":587,"secure":false,"timestamp":"2025-09-25 19:37:24","user":"astralearnia@gmail.com"}
+{"host":"smtp.gmail.com","level":"info","maxConnections":5,"message":"Initializing SMTP transporter","pool":true,"port":587,"secure":false,"timestamp":"2025-09-25 19:37:24","user":"astralearnia@gmail.com"}
+{"level":"error","message":"Failed to initialize email transporter: connect ETIMEDOUT 74.125.21.109:587","stack":"Error: connect ETIMEDOUT 74.125.21.109:587\n    at TCPConnectWrap.afterConnect [as oncomplete] (node:net:1610:16)","timestamp":"2025-09-25 19:38:39"}
+{"level":"error","message":"Failed to initialize email transporter: connect ETIMEDOUT 74.125.21.109:587","stack":"Error: connect ETIMEDOUT 74.125.21.109:587\n    at TCPConnectWrap.afterConnect [as oncomplete] (node:net:1610:16)","timestamp":"2025-09-25 19:38:39"}
+{"host":"smtp.gmail.com","level":"info","maxConnections":5,"message":"Initializing SMTP transporter","pool":true,"port":587,"secure":false,"timestamp":"2025-09-25 19:38:40","user":"astralearnia@gmail.com"}
+{"host":"smtp.gmail.com","level":"info","maxConnections":5,"message":"Initializing SMTP transporter","pool":true,"port":587,"secure":false,"timestamp":"2025-09-25 19:38:40","user":"astralearnia@gmail.com"}
+{"level":"error","message":"Failed to initialize email transporter: connect ETIMEDOUT 74.125.21.109:587","stack":"Error: connect ETIMEDOUT 74.125.21.109:587\n    at TCPConnectWrap.afterConnect [as oncomplete] (node:net:1610:16)","timestamp":"2025-09-25 19:39:55"}
+{"level":"error","message":"Failed to initialize email transporter: connect ETIMEDOUT 74.125.21.109:587","stack":"Error: connect ETIMEDOUT 74.125.21.109:587\n    at TCPConnectWrap.afterConnect [as oncomplete] (node:net:1610:16)","timestamp":"2025-09-25 19:39:55"}

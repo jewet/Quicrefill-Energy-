@@ -1,0 +1,169 @@
+import express, { Router, Request, Response, NextFunction, ErrorRequestHandler } from 'express';
+import { ApiError } from '../lib/utils/errors/appError';
+import { authenticationMiddleware } from '../middlewares/authentication';
+import { webhookRateLimiter } from '../modules/middlewareAndValidation';
+import walletController from '../controllers/walletController';
+import paymentRoutes from './paymentRoutes';
+import walletRoutes from './walletRoutes';
+import { electricityRouter as electricityRoutes } from './electricityRoutes';
+import { electRouter as electRoutes } from './electRoute';
+import { apiAuthRoutes, accountsAuthRoutes } from './accounts/auth';
+import accountRoutes from './accounts/root';
+import CustomerAddressRouter from './customerMap/customerAddress.routes';
+import CategoryRouter from './category/categoryRoutes';
+import ProductRouter from './product/productRoutes';
+import CartRouter from './cart/cart.routes';
+import productOrderRoute from './order/productOrderRoutes';
+import SupportRouter from './support/root';
+import { reviewRoutes } from './reviews/root';
+import otpRoutes from './otp/otp.route';
+import TermiiOtpRouter from './otp/termii-otp.router';
+import IdentityVerificationRoutes from './identity/IdentityVerificationRoutes';
+import documentRoutes from './Document/documentRoutes';
+import emailRoutes from './email/emailRoutes';
+import serviceRoute from './serviceRoutes';
+import voucherRoute from './voucherRoutes';
+
+// Helper function for async routes
+const asyncHandler = (
+  fn: (req: Request, res: Response, next: NextFunction) => Promise<void>
+) => (req: Request, res: Response, next: NextFunction): Promise<void> =>
+  Promise.resolve(fn(req, res, next)).catch(next);
+
+// Middleware to save raw body
+const rawBodySaver = (req: Request, res: Response, next: NextFunction) => {
+  if (Buffer.isBuffer(req.body)) {
+    (req as any).rawBody = req.body;
+    console.log('Raw Body Set:', req.body.toString('utf8'));
+  } else {
+    console.warn('Raw body is not a Buffer:', req.body);
+    (req as any).rawBody = null;
+  }
+  next();
+};
+
+// Middleware to sanitize URLs
+const sanitizeUrl = (req: Request, res: Response, next: NextFunction) => {
+  const originalUrl = req.originalUrl;
+  const [path, queryString] = originalUrl.split('?');
+
+  // Sanitize path: remove only CRLF and encoded CRLF (%0D, %0A)
+  const sanitizedPath = path.replace(/(\r\n|[\r\n]|%0D|%0A)/g, '');
+
+  // Reconstruct the sanitized URL
+  const sanitizedUrl = queryString ? `${sanitizedPath}?${queryString}` : sanitizedPath;
+
+  // Log the sanitization process
+  console.log(`[sanitizeUrl] Original URL: ${originalUrl}, Sanitized URL: ${sanitizedUrl}`);
+
+  // Redirect only if the path was modified
+  if (path !== sanitizedPath) {
+    console.log(`[sanitizeUrl] Redirecting from ${originalUrl} to ${sanitizedUrl}`);
+    return res.redirect(307, sanitizedUrl);
+  }
+
+  console.log(`[sanitizeUrl] URL processed: ${sanitizedUrl}`);
+  next();
+};
+
+// Initialize router with case-insensitive and non-strict routing
+const rootRoutes: Router = Router({ caseSensitive: false, strict: false });
+
+// Apply URL sanitization globally
+rootRoutes.use(sanitizeUrl);
+
+// Debug middleware to log all incoming requests
+rootRoutes.use((req: Request, res: Response, next: NextFunction) => {
+  console.log(`[rootRoutes] Incoming request: ${req.method} ${req.originalUrl}`);
+  next();
+});
+
+// Root route
+rootRoutes.get('/', (req: Request, res: Response) => {
+  res.json({ message: 'API is running' });
+});
+
+// Customer service API status
+rootRoutes.get('/api/customer', (req: Request, res: Response) => {
+  res.status(200).json({
+    success: true,
+    message: 'Customer Service API is running',
+    version: '1.0.0',
+    timestamp: new Date().toISOString(),
+  });
+});
+
+// Internal webhook route
+rootRoutes.post(
+  '/internal/webhook',
+  express.json(),
+  webhookRateLimiter,
+  asyncHandler(walletController.handleWebhook.bind(walletController))
+);
+
+// Flutterwave webhook route
+rootRoutes.post(
+  '/flutterwave/webhook',
+  express.raw({ type: 'application/json' }),
+  rawBodySaver,
+  webhookRateLimiter,
+  asyncHandler(walletController.handleFlutterwaveWebhook.bind(walletController))
+);
+
+// Mount other routes
+rootRoutes.use('/api/payments', paymentRoutes);
+rootRoutes.use('/api/wallet', authenticationMiddleware, walletRoutes);
+rootRoutes.use('/api/electricity', authenticationMiddleware, electricityRoutes);
+rootRoutes.use('/api/elect', authenticationMiddleware, electRoutes);
+rootRoutes.use('/api/auth', apiAuthRoutes);
+rootRoutes.use('/accounts/auth', accountsAuthRoutes);
+rootRoutes.use('/accounts', accountRoutes);
+rootRoutes.use('/api/otp', otpRoutes);
+rootRoutes.use('/api/termii/otp', TermiiOtpRouter);
+rootRoutes.use('/api/category', (req: Request, res: Response, next: NextFunction) => {
+  console.log('[rootRoutes] Entering /api/category router');
+  next();
+}, CategoryRouter);
+rootRoutes.use('/api/products', ProductRouter);
+rootRoutes.use('/api/carts', CartRouter);
+rootRoutes.use('/api/products/orders', productOrderRoute);
+rootRoutes.use('/support', SupportRouter);
+rootRoutes.use('/reviews', authenticationMiddleware, reviewRoutes);
+rootRoutes.use('/api/identity', authenticationMiddleware, IdentityVerificationRoutes);
+rootRoutes.use('/api/documents', authenticationMiddleware, documentRoutes);
+rootRoutes.use('/api/email', emailRoutes);
+rootRoutes.use('/api/services', authenticationMiddleware, serviceRoute);
+rootRoutes.use('/api/user', authenticationMiddleware, CustomerAddressRouter);
+rootRoutes.use('/api/voucher', authenticationMiddleware, voucherRoute);
+
+// Catch-all for 404 errors
+rootRoutes.use((req: Request, res: Response, next: NextFunction) => {
+  console.log(`[rootRoutes] 404 - Route not found: ${req.originalUrl}`);
+  next(new ApiError(404, `Route ${req.originalUrl} not found`));
+});
+
+// Global error handler
+const errorHandler: ErrorRequestHandler = (
+  err: Error,
+  req: Request,
+  res: Response,
+  next: NextFunction
+) => {
+  console.error(`[rootRoutes] Error: ${err.message}, URL: ${req.originalUrl}, Stack: ${err.stack}`);
+  if (err instanceof ApiError) {
+    res.status(err.statusCode).json({
+      success: false,
+      message: err.message,
+    });
+  } else {
+    res.status(500).json({
+      success: false,
+      message: 'Internal server error',
+    });
+  }
+  // No next() call to ensure the response is terminated
+};
+
+rootRoutes.use(errorHandler);
+
+export { rootRoutes };

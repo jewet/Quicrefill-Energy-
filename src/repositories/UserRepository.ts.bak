@@ -1,0 +1,688 @@
+// src/repositories/user.repository.ts
+import { 
+  PrismaClient, 
+  User, 
+  Role,
+  Prisma 
+} from '@prisma/client';
+import logger from '../config/logger';
+import { ApiError } from '../lib/utils/errors/appError';
+
+// Define types for better type safety
+export interface CreateUserData {
+  email: string;
+  firstName: string;
+  lastName: string;
+  password?: string;
+  phoneNumber?: string;
+  role?: Role;
+  isSocialAccount?: boolean;
+  socialAccountProvider?: string;
+  emailVerified?: boolean;
+  phoneVerified?: boolean;
+}
+
+export interface UpdateUserData {
+  firstName?: string;
+  lastName?: string;
+  name?: string;
+  phoneNumber?: string;
+  address?: string;
+  avatar?: string;
+  emailVerified?: boolean;
+  phoneVerified?: boolean;
+  identityVerified?: boolean;
+  bvnVerified?: boolean;
+  businessVerified?: boolean;
+  webAccessGranted?: boolean;
+  webAccessGrantedAt?: Date;
+  migratedToVendor?: boolean;
+  migrationDate?: Date;
+  notificationsEnabled?: boolean;
+  twoFactorEnabled?: boolean;
+  twoFactorSecret?: string;
+  isSuspended?: boolean;
+  suspendedAt?: Date;
+  isWithdrawalSuspended?: boolean;
+  withdrawalSuspendedAt?: Date;
+  withdrawalSuspensionReason?: string;
+  withdrawalSuspensionDuration?: number;
+  gender?: string;
+  dateOfBirth?: Date;
+  pushToken?: string;
+  lastLoginAt?: Date;
+}
+
+export interface UserFilters {
+  role?: Role;
+  emailVerified?: boolean;
+  phoneVerified?: boolean;
+  identityVerified?: boolean;
+  bvnVerified?: boolean;
+  businessVerified?: boolean;
+  isSuspended?: boolean;
+  isWithdrawalSuspended?: boolean;
+  createdAfter?: Date;
+  createdBefore?: Date;
+  lastLoginAfter?: Date;
+  lastLoginBefore?: Date;
+  search?: string; // For searching by name, email, or phone
+}
+
+export interface PaginationOptions {
+  page?: number;
+  limit?: number;
+  sortBy?: string;
+  sortOrder?: 'asc' | 'desc';
+}
+
+export interface UserWithProfile extends User {
+  profile?: {
+    id: string;
+    role: Role;
+    status: string | null;
+    isWebEnabled: boolean;
+    department: string | null;
+    jobTitle: string | null;
+  } | null;
+}
+
+export class UserRepository {
+  private prisma: PrismaClient;
+
+  constructor(prismaClient?: PrismaClient) {
+    this.prisma = prismaClient || new PrismaClient();
+  }
+
+  /**
+   * Create a new user
+   */
+  async createUser(data: CreateUserData): Promise<User> {
+    try {
+      const user = await this.prisma.user.create({
+        data: {
+          ...data,
+          role: data.role || Role.CUSTOMER,
+          isSocialAccount: data.isSocialAccount || false,
+          emailVerified: data.emailVerified || false,
+          phoneVerified: data.phoneVerified || false,
+          socialAccountProvider: data.socialAccountProvider as any ?? null,
+        }
+      });
+
+      logger.info(`User created successfully`, {
+        userId: user.id,
+        email: user.email,
+        role: user.role
+      });
+
+      return user;
+    } catch (error) {
+      logger.error('Error creating user', {
+        error: error instanceof Error ? error.message : 'Unknown error',
+        email: data.email
+      });
+      
+      if (error instanceof Prisma.PrismaClientKnownRequestError) {
+        if (error.code === 'P2002') {
+          const target = (error.meta?.target as string[]) || [];
+          if (target.includes('email')) {
+            throw ApiError.conflict('Email already exists');
+          }
+          if (target.includes('phoneNumber')) {
+            throw ApiError.conflict('Phone number already exists');
+          }
+          throw ApiError.conflict('User with this information already exists');
+        }
+      }
+      
+      throw ApiError.internal('Failed to create user');
+    }
+  }
+
+  /**
+   * Find user by ID
+   */
+  async findById(id: string): Promise<UserWithProfile | null> {
+    try {
+      const user = await this.prisma.user.findUnique({
+        where: { id },
+        include: {
+          profile: {
+            select: {
+              id: true,
+              role: true,
+              status: true,
+              isWebEnabled: true,
+              department: true,
+              jobTitle: true,
+            }
+          }
+        }
+      });
+
+      return user;
+    } catch (error) {
+      logger.error('Error finding user by ID', {
+        error: error instanceof Error ? error.message : 'Unknown error',
+        userId: id
+      });
+      throw ApiError.internal('Failed to find user');
+    }
+  }
+
+  /**
+   * Find user by email
+   */
+  async findByEmail(email: string): Promise<UserWithProfile | null> {
+    try {
+      const user = await this.prisma.user.findUnique({
+        where: { email },
+        include: {
+          profile: {
+            select: {
+              id: true,
+              role: true,
+              status: true,
+              isWebEnabled: true,
+              department: true,
+              jobTitle: true,
+            }
+          }
+        }
+      });
+
+      return user;
+    } catch (error) {
+      logger.error('Error finding user by email', {
+        error: error instanceof Error ? error.message : 'Unknown error',
+        email
+      });
+      throw ApiError.internal('Failed to find user');
+    }
+  }
+
+  /**
+   * Find user by phone number
+   */
+  async findByPhoneNumber(phoneNumber: string): Promise<UserWithProfile | null> {
+    try {
+      const user = await this.prisma.user.findUnique({
+        where: { phoneNumber },
+        include: {
+          profile: {
+            select: {
+              id: true,
+              role: true,
+              status: true,
+              isWebEnabled: true,
+              department: true,
+              jobTitle: true,
+            }
+          }
+        }
+      });
+
+      return user;
+    } catch (error) {
+      logger.error('Error finding user by phone number', {
+        error: error instanceof Error ? error.message : 'Unknown error',
+        phoneNumber
+      });
+      throw ApiError.internal('Failed to find user');
+    }
+  }
+
+  /**
+   * Find profile by ID
+   */
+  async findProfileById(id: string): Promise<{
+    id: string;
+    userId: string;
+    role: Role;
+    status: string | null;
+    isWebEnabled: boolean;
+    department: string | null;
+    jobTitle: string | null;
+  } | null> {
+    try {
+      const profile = await this.prisma.profile.findUnique({
+        where: { id },
+        select: {
+          id: true,
+          userId: true,
+          role: true,
+          status: true,
+          isWebEnabled: true,
+          department: true,
+          jobTitle: true,
+        }
+      });
+
+      if (!profile) {
+        logger.info(`Profile not found for ID: ${id}`);
+        return null;
+      }
+
+      logger.info(`Profile found for ID: ${id}`);
+      return profile;
+    } catch (error) {
+      logger.error('Error finding profile by ID', {
+        error: error instanceof Error ? error.message : 'Unknown error',
+        profileId: id
+      });
+      throw ApiError.internal('Failed to find profile');
+    }
+  }
+
+  /**
+   * Update user
+   */
+  async updateUser(id: string, data: UpdateUserData): Promise<User> {
+    try {
+      // Check if user exists
+      const existingUser = await this.prisma.user.findUnique({
+        where: { id }
+      });
+
+      if (!existingUser) {
+        throw ApiError.notFound('User not found');
+      }
+
+      const user = await this.prisma.user.update({
+        where: { id },
+        data: {
+          ...data,
+          updatedAt: new Date(),
+        }
+      });
+
+      logger.info(`User updated successfully`, {
+        userId: id,
+        updatedFields: Object.keys(data)
+      });
+
+      return user;
+    } catch (error) {
+      if (error instanceof ApiError) {
+        throw error;
+      }
+      
+      logger.error('Error updating user', {
+        error: error instanceof Error ? error.message : 'Unknown error',
+        userId: id
+      });
+      
+      if (error instanceof Prisma.PrismaClientKnownRequestError) {
+        if (error.code === 'P2002') {
+          const target = (error.meta?.target as string[]) || [];
+          if (target.includes('email')) {
+            throw ApiError.conflict('Email already exists');
+          }
+          if (target.includes('phoneNumber')) {
+            throw ApiError.conflict('Phone number already exists');
+          }
+        }
+        if (error.code === 'P2025') {
+          throw ApiError.notFound('User not found');
+        }
+      }
+      
+      throw ApiError.internal('Failed to update user');
+    }
+  }
+
+  /**
+   * Get paginated users with filters
+   */
+  async getUsers(
+    filters: UserFilters = {},
+    pagination: PaginationOptions = {}
+  ): Promise<{
+    data: UserWithProfile[];
+    total: number;
+    page: number;
+    limit: number;
+    totalPages: number;
+  }> {
+    try {
+      const {
+        page = 1,
+        limit = 10,
+        sortBy = 'createdAt',
+        sortOrder = 'desc'
+      } = pagination;
+
+      const skip = (page - 1) * limit;
+
+      // Build where clause
+      const where: Prisma.UserWhereInput = {};
+
+      if (filters.role) {
+        where.role = filters.role;
+      }
+
+      if (filters.emailVerified !== undefined) {
+        where.emailVerified = filters.emailVerified;
+      }
+
+      if (filters.phoneVerified !== undefined) {
+        where.phoneVerified = filters.phoneVerified;
+      }
+
+      if (filters.identityVerified !== undefined) {
+        where.identityVerified = filters.identityVerified;
+      }
+
+      if (filters.bvnVerified !== undefined) {
+        where.bvnVerified = filters.bvnVerified;
+      }
+
+      if (filters.businessVerified !== undefined) {
+        where.businessVerified = filters.businessVerified;
+      }
+
+      if (filters.isSuspended !== undefined) {
+        where.isSuspended = filters.isSuspended;
+      }
+
+      if (filters.isWithdrawalSuspended !== undefined) {
+        where.isWithdrawalSuspended = filters.isWithdrawalSuspended;
+      }
+
+      if (filters.createdAfter || filters.createdBefore) {
+        where.createdAt = {};
+        if (filters.createdAfter) {
+          where.createdAt.gte = filters.createdAfter;
+        }
+        if (filters.createdBefore) {
+          where.createdAt.lte = filters.createdBefore;
+        }
+      }
+
+      if (filters.lastLoginAfter || filters.lastLoginBefore) {
+        where.lastLoginAt = {};
+        if (filters.lastLoginAfter) {
+          where.lastLoginAt.gte = filters.lastLoginAfter;
+        }
+        if (filters.lastLoginBefore) {
+          where.lastLoginAt.lte = filters.lastLoginBefore;
+        }
+      }
+
+      if (filters.search) {
+        where.OR = [
+          { firstName: { contains: filters.search, mode: 'insensitive' } },
+          { lastName: { contains: filters.search, mode: 'insensitive' } },
+          { email: { contains: filters.search, mode: 'insensitive' } },
+          { phoneNumber: { contains: filters.search, mode: 'insensitive' } },
+        ];
+      }
+
+      // Build order by clause
+      const orderBy: Prisma.UserOrderByWithRelationInput = {};
+      if (sortBy === 'createdAt' || sortBy === 'updatedAt' || sortBy === 'lastLoginAt') {
+        orderBy[sortBy] = sortOrder;
+      } else if (sortBy === 'name') {
+        orderBy.firstName = sortOrder;
+      } else {
+        orderBy.createdAt = 'desc';
+      }
+
+      const [data, total] = await Promise.all([
+        this.prisma.user.findMany({
+          where,
+          skip,
+          take: limit,
+          orderBy,
+          include: {
+            profile: {
+              select: {
+                id: true,
+                role: true,
+                status: true,
+                isWebEnabled: true,
+                department: true,
+                jobTitle: true,
+              }
+            }
+          }
+        }),
+        this.prisma.user.count({ where })
+      ]);
+
+      const totalPages = Math.ceil(total / limit);
+
+      return {
+        data,
+        total,
+        page,
+        limit,
+        totalPages
+      };
+    } catch (error) {
+      logger.error('Error getting users', {
+        error: error instanceof Error ? error.message : 'Unknown error',
+        filters,
+        pagination
+      });
+      throw ApiError.internal('Failed to get users');
+    }
+  }
+
+  /**
+   * Delete user (soft delete)
+   */
+  async deleteUser(id: string): Promise<void> {
+    try {
+      const user = await this.prisma.user.findUnique({
+        where: { id }
+      });
+
+      if (!user) {
+        throw ApiError.notFound('User not found');
+      }
+
+      // Soft delete by setting deletedAt
+      await this.prisma.user.update({
+        where: { id },
+        data: {
+          deletedAt: new Date(),
+          updatedAt: new Date(),
+        }
+      });
+
+      logger.info(`User soft deleted`, {
+        userId: id,
+        email: user.email
+      });
+    } catch (error) {
+      if (error instanceof ApiError) {
+        throw error;
+      }
+      
+      logger.error('Error deleting user', {
+        error: error instanceof Error ? error.message : 'Unknown error',
+        userId: id
+      });
+      
+      throw ApiError.internal('Failed to delete user');
+    }
+  }
+
+  /**
+   * Check if user exists by email
+   */
+  async existsByEmail(email: string): Promise<boolean> {
+    try {
+      const user = await this.prisma.user.findUnique({
+        where: { email },
+        select: { id: true }
+      });
+
+      return !!user;
+    } catch (error) {
+      logger.error('Error checking user existence by email', {
+        error: error instanceof Error ? error.message : 'Unknown error',
+        email
+      });
+      return false;
+    }
+  }
+
+  /**
+   * Check if user exists by phone number
+   */
+  async existsByPhoneNumber(phoneNumber: string): Promise<boolean> {
+    try {
+      const user = await this.prisma.user.findUnique({
+        where: { phoneNumber },
+        select: { id: true }
+      });
+
+      return !!user;
+    } catch (error) {
+      logger.error('Error checking user existence by phone number', {
+        error: error instanceof Error ? error.message : 'Unknown error',
+        phoneNumber
+      });
+      return false;
+    }
+  }
+
+  /**
+   * Get user statistics
+   */
+  async getUserStats(): Promise<{
+    total: number;
+    customers: number;
+    vendors: number;
+    agents: number;
+    admins: number;
+    verified: number;
+    suspended: number;
+  }> {
+    try {
+      const [
+        total,
+        customers,
+        vendors,
+        agents,
+        admins,
+        verified,
+        suspended
+      ] = await Promise.all([
+        this.prisma.user.count(),
+        this.prisma.user.count({ where: { role: Role.CUSTOMER } }),
+        this.prisma.user.count({ where: { role: Role.VENDOR } }),
+        this.prisma.user.count({ where: { role: Role.DELIVERY_AGENT } }),
+        this.prisma.user.count({ where: { role: Role.ADMIN } }),
+        this.prisma.user.count({ where: { identityVerified: true } }),
+        this.prisma.user.count({ where: { isSuspended: true } })
+      ]);
+
+      return {
+        total,
+        customers,
+        vendors,
+        agents,
+        admins,
+        verified,
+        suspended
+      };
+    } catch (error) {
+      logger.error('Error getting user statistics', {
+        error: error instanceof Error ? error.message : 'Unknown error'
+      });
+      throw ApiError.internal('Failed to get user statistics');
+    }
+  }
+
+  /**
+   * Get users by role
+   */
+  async getUsersByRole(role: Role): Promise<User[]> {
+    try {
+      return await this.prisma.user.findMany({
+        where: { role }
+      });
+    } catch (error) {
+      logger.error('Error getting users by role', {
+        error: error instanceof Error ? error.message : 'Unknown error',
+        role
+      });
+      throw ApiError.internal('Failed to get users by role');
+    }
+  }
+
+  // src/repositories/user.repository.ts
+/**
+ * Find profile by userId
+ */
+async findProfileByUserId(userId: string): Promise<{
+  id: string;
+  userId: string;
+  role: Role;
+  status: string | null;
+  isWebEnabled: boolean;
+  department: string | null;
+  jobTitle: string | null;
+} | null> {
+  try {
+    const profile = await this.prisma.profile.findFirst({
+      where: { userId },
+      select: {
+        id: true,
+        userId: true,
+        role: true,
+        status: true,
+        isWebEnabled: true,
+        department: true,
+        jobTitle: true,
+      }
+    });
+
+    if (!profile) {
+      logger.info(`Profile not found for userId: ${userId}`);
+      return null;
+    }
+
+    logger.info(`Profile found for userId: ${userId}`);
+    return profile;
+  } catch (error) {
+    logger.error('Error finding profile by userId', {
+      error: error instanceof Error ? error.message : 'Unknown error',
+      userId
+    });
+    throw ApiError.internal('Failed to find profile');
+  }
+}
+
+  /**
+   * Update user's last login
+   */
+  async updateLastLogin(id: string): Promise<void> {
+    try {
+      await this.prisma.user.update({
+        where: { id },
+        data: {
+          lastLoginAt: new Date(),
+          updatedAt: new Date(),
+        }
+      });
+    } catch (error) {
+      logger.error('Error updating last login', {
+        error: error instanceof Error ? error.message : 'Unknown error',
+        userId: id
+      });
+      // Don't throw error for this operation as it's not critical
+    }
+  }
+
+  /**
+   * Cleanup resources
+   */
+  async disconnect(): Promise<void> {
+    await this.prisma.$disconnect();
+  }
+}

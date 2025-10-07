@@ -1,0 +1,1229 @@
+import express from "express";
+import dotenv from "dotenv";
+import { loginRateLimiter, authenticationMiddleware } from "../../middlewares/authentication";
+import { errorHandler } from "../../lib/handlers/errorHandler";
+import { passwordResetLimiter} from "../../middlewares/rateLimiter";
+import {
+  AccountVerify,
+  Login,
+  PasswordReset,
+  Register,
+  RequestAccountVerify,
+  RequestPasswordReset,
+  TokenRefresh,
+  TokenVerify,
+  RequestAccountDeletion,
+  VerifyAccountDeletionOtp,
+  verifyMigrationOTP,
+} from "../../controllers/root";
+import { logout } from "../../controllers/accounts/auth/logout";
+
+dotenv.config();
+
+const accountsAuthRoutes = express.Router();
+const apiAuthRoutes = express.Router();
+
+/**
+ * @openapi
+ * /accounts/auth/register:
+ *   post:
+ *     summary: Register a new user
+ *     description: Creates a new user account with the provided details and sends an OTP for email verification if not a social account.
+ *     operationId: registerUser
+ *     tags:
+ *       - Authentication
+ *     parameters:
+ *       - name: platform
+ *         in: query
+ *         description: Platform the request originates from (e.g., 'app' or 'web')
+ *         required: false
+ *         schema:
+ *           type: string
+ *           enum: [app, web]
+ *           default: app
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - email
+ *               - password
+ *               - firstName
+ *               - lastName
+ *             properties:
+ *               email:
+ *                 type: string
+ *                 format: email
+ *                 example: user@example.com
+ *               password:
+ *                 type: string
+ *                 format: password
+ *                 minLength: 6
+ *                 example: Password123!
+ *               firstName:
+ *                 type: string
+ *                 example: John
+ *               lastName:
+ *                 type: string
+ *                 example: Doe
+ *               role:
+ *                 type: string
+ *                 enum: [CUSTOMER, VENDOR, DELIVERY_REP, DELIVERY_AGENT, MANAGER, SUPERVISOR, FINANCE_MANAGER, ADMIN, STAFF, SERVICE_REP]
+ *                 default: CUSTOMER
+ *               isSocialAccount:
+ *                 type: boolean
+ *                 default: false
+ *               socialAccountProvider:
+ *                 type: string
+ *                 example: google
+ *               address:
+ *                 type: string
+ *                 nullable: true
+ *                 example: 123 Main St
+ *               phoneNumber:
+ *                 type: string
+ *                 pattern: ^\+?[1-9]\d{1,14}$
+ *                 nullable: true
+ *                 example: +12345678901
+ *     responses:
+ *       201:
+ *         description: User registered successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: true
+ *                 data:
+ *                   type: object
+ *                   properties:
+ *                     id:
+ *                       type: string
+ *                       format: uuid
+ *                     email:
+ *                       type: string
+ *                       format: email
+ *                     firstName:
+ *                       type: string
+ *                     lastName:
+ *                       type: string
+ *                     name:
+ *                       type: string
+ *                     role:
+ *                       type: string
+ *                     emailVerified:
+ *                       type: boolean
+ *                     createdAt:
+ *                       type: string
+ *                       format: date-time
+ *                     transactionReference:
+ *                       type: string
+ *                       nullable: true
+ *                       example: REG_123e4567-e89b-12d3-a456-426614174000_1634567890
+ *                 message:
+ *                   type: string
+ *                   example: User registered successfully. Please check your email for OTP if applicable.
+ *       400:
+ *         description: Bad request (e.g., user already exists, invalid input)
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: false
+ *                 error:
+ *                   type: string
+ *                   example: User already exists
+ *                 errorCode:
+ *                   type: string
+ *                   example: USER_ALREADY_EXIST
+ *       422:
+ *         description: Validation error
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: false
+ *                 error:
+ *                   type: string
+ *                   example: Invalid input format
+ *                 errorCode:
+ *                   type: string
+ *                   example: UNPROCESSABLE_ENTITY
+ *                 issues:
+ *                   type: array
+ *                   items:
+ *                     type: object
+ *                     properties:
+ *                       path:
+ *                         type: array
+ *                         items:
+ *                           type: string
+ *                       message:
+ *                         type: string
+ */
+accountsAuthRoutes.post("/register", errorHandler(Register));
+
+/**
+ * @openapi
+ * /accounts/auth/registers:
+ *   post:
+ *     summary: Register a new user (alternative endpoint)
+ *     description: Alias for the /register endpoint, creates a new user account with the provided details.
+ *     operationId: registerUserAlias
+ *     tags:
+ *       - Authentication
+ *     parameters:
+ *       - name: platform
+ *         in: query
+ *         description: Platform the request originates from (e.g., 'app' or 'web')
+ *         required: false
+ *         schema:
+ *           type: string
+ *           enum: [app, web]
+ *           default: app
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             $ref: '#/components/schemas/RegisterRequest'
+ *     responses:
+ *       201:
+ *         description: User registered successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/RegisterResponse'
+ *       400:
+ *         description: Bad request
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
+ *       422:
+ *         description: Validation error
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ValidationErrorResponse'
+ */
+accountsAuthRoutes.post("/registers", errorHandler(Register));
+
+/**
+ * @openapi
+ * /accounts/auth/login:
+ *   post:
+ *     summary: Log in a user
+ *     description: Authenticates a user using email or phone number and password, or triggers OTP for DELIVERY_REP to VENDOR migration on web platform.
+ *     operationId: loginUser
+ *     tags:
+ *       - Authentication
+ *     parameters:
+ *       - name: platform
+ *         in: query
+ *         description: Platform the request originates from (e.g., 'app' or 'web')
+ *         required: false
+ *         schema:
+ *           type: string
+ *           enum: [app, web]
+ *           default: app
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - password
+ *             properties:
+ *               email:
+ *                 type: string
+ *                 format: email
+ *                 example: user@example.com
+ *                 nullable: true
+ *               phoneNumber:
+ *                 type: string
+ *                 pattern: ^\+?[1-9]\d{1,14}$
+ *                 example: +1234567890
+ *                 nullable: true
+ *               password:
+ *                 type: string
+ *                 format: password
+ *                 minLength: 6
+ *                 example: Password123!
+ *             oneOf:
+ *               - required: [email]
+ *               - required: [phoneNumber]
+ *     responses:
+ *       200:
+ *         description: Login successful or OTP required for migration
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: true
+ *                 data:
+ *                   oneOf:
+ *                     - type: object
+ *                       properties:
+ *                         token:
+ *                           type: object
+ *                           properties:
+ *                             accessToken:
+ *                               type: string
+ *                               example: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
+ *                             refreshToken:
+ *                               type: string
+ *                               example: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
+ *                     - type: object
+ *                       properties:
+ *                         requiresMigration:
+ *                           type: boolean
+ *                           example: true
+ *                         transactionReference:
+ *                           type: string
+ *                           format: uuid
+ *                           example: 123e4567-e89b-12d3-a456-426614174000
+ *                 message:
+ *                   type: string
+ *                   example: Login successful or Please verify OTP sent to your email to proceed with vendor migration.
+ *       401:
+ *         description: Unauthorized (e.g., incorrect credentials)
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
+ *       429:
+ *         description: Too many login attempts
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
+ */
+accountsAuthRoutes.post("/login", loginRateLimiter, errorHandler(Login));
+
+/**
+ * @openapi
+ * /accounts/auth/account-verify:
+ *   post:
+ *     summary: Verify user account
+ *     description: "Verifies a user's email or phone number using an OTP. Returns a success message or a new OTP if resend is requested (keyword: sent)."
+ *     operationId: verifyAccount
+ *     tags:
+ *       - Authentication
+ *     parameters:
+ *       - name: platform
+ *         in: query
+ *         description: Platform the request originates from (e.g., 'app' or 'web')
+ *         required: false
+ *         schema:
+ *           type: string
+ *           enum: [app, web]
+ *           default: app
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - medium
+ *               - otp
+ *               - transactionReference
+ *             properties:
+ *               medium:
+ *                 type: string
+ *                 enum: [EMAIL, SMS]
+ *                 example: EMAIL
+ *               email:
+ *                 type: string
+ *                 format: email
+ *                 example: user@example.com
+ *                 nullable: true
+ *               phoneNumber:
+ *                 type: string
+ *                 pattern: ^\+?\d{10,15}$
+ *                 example: +12345678901
+ *                 nullable: true
+ *               otp:
+ *                 type: string
+ *                 example: 123456
+ *               transactionReference:
+ *                 type: string
+ *                 example: REG_123e4567-e89b-12d3-a456-426614174000_1634567890
+ *               resend:
+ *                 type: boolean
+ *                 default: false
+ *             oneOf:
+ *               - required: [email]
+ *               - required: [phoneNumber]
+ *     responses:
+ *       200:
+ *         description: "Account verified successfully or new OTP sent (keyword: sent)."
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: true
+ *                 data:
+ *                   type: object
+ *                   properties:
+ *                     user:
+ *                       type: object
+ *                       properties:
+ *                         id:
+ *                           type: string
+ *                           format: uuid
+ *                         email:
+ *                           type: string
+ *                           format: email
+ *                         name:
+ *                           type: string
+ *                         role:
+ *                           type: string
+ *                     newTransactionReference:
+ *                       type: string
+ *                       nullable: true
+ *                       example: REG_123e4567-e89b-12d3-a456-426614174000_1634567891
+ *                     message:
+ *                       type: string
+ *                       nullable: true
+ *                       example: New OTP sent. Please use the new transaction reference.
+ *                 message:
+ *                   type: string
+ *                   example: EMAIL verified successfully
+ *       400:
+ *         description: Bad request (e.g., invalid OTP)
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
+ *       401:
+ *         description: Unauthorized (e.g., user does not exist)
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
+ */
+accountsAuthRoutes.post("/account-verify", errorHandler(AccountVerify));
+
+/**
+ * @openapi
+ * /accounts/auth/request-account-verify:
+ *   post:
+ *     summary: Request account verification OTP
+ *     description: Sends an OTP to the user's email for account verification.
+ *     operationId: requestAccountVerify
+ *     tags:
+ *       - Authentication
+ *     parameters:
+ *       - name: platform
+ *         in: query
+ *         description: Platform the request originates from (e.g., 'app' or 'web')
+ *         required: false
+ *         schema:
+ *           type: string
+ *           enum: [app, web]
+ *           default: app
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - email
+ *             properties:
+ *               email:
+ *                 type: string
+ *                 format: email
+ *                 example: user@example.com
+ *     responses:
+ *       200:
+ *         description: OTP sent successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: true
+ *                 data:
+ *                   type: object
+ *                   properties:
+ *                     transactionReference:
+ *                       type: string
+ *                       example: REG_123e4567-e89b-12d3-a456-426614174000
+ *                 message:
+ *                   type: string
+ *                   example: Verification OTP sent to John Doe on user@example.com
+ *       400:
+ *         description: Bad request (e.g., email already verified)
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
+ *       401:
+ *         description: Unauthorized (e.g., user does not exist)
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
+ */
+accountsAuthRoutes.post("/request-account-verify", errorHandler(RequestAccountVerify));
+
+/**
+ * @openapi
+ * /accounts/auth/token/refresh:
+ *   post:
+ *     summary: Refresh access token
+ *     description: Generates a new access token using a valid refresh token.
+ *     operationId: refreshToken
+ *     tags:
+ *       - Authentication
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - refresh
+ *             properties:
+ *               refresh:
+ *                 type: string
+ *                 example: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
+ *     responses:
+ *       200:
+ *         description: Token refreshed successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: true
+ *                 data:
+ *                   type: object
+ *                   properties:
+ *                     accessToken:
+ *                       type: string
+ *                       example: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
+ *                 message:
+ *                   type: string
+ *                   example: Token refreshed successfully
+ *       400:
+ *         description: Bad request (e.g., invalid refresh token)
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
+ */
+accountsAuthRoutes.post("/token/refresh", errorHandler(TokenRefresh));
+
+/**
+ * @openapi
+ * /accounts/auth/token/verify:
+ *   post:
+ *     summary: Verify access token
+ *     description: Verifies the validity of an access token and returns its payload.
+ *     operationId: verifyToken
+ *     tags:
+ *       - Authentication
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - token
+ *             properties:
+ *               token:
+ *                 type: string
+ *                 example: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
+ *     responses:
+ *       200:
+ *         description: Token verified successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: true
+ *                 data:
+ *                   type: object
+ *                   properties:
+ *                     userId:
+ *                       type: string
+ *                       format: uuid
+ *                     email:
+ *                       type: string
+ *                       format: email
+ *                     role:
+ *                       type: string
+ *                     contextRole:
+ *                       type: string
+ *                 message:
+ *                   type: string
+ *                   example: Token verified successfully
+ *       400:
+ *         description: Bad request (e.g., invalid token)
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
+ */
+accountsAuthRoutes.post("/token/verify", errorHandler(TokenVerify));
+
+/**
+ * @openapi
+ * /accounts/auth/request-password-reset:
+ *   post:
+ *     summary: Request password reset OTP
+ *     description: Sends an OTP to the user's email for password reset.
+ *     operationId: requestPasswordReset
+ *     tags:
+ *       - Authentication
+ *     parameters:
+ *       - name: platform
+ *         in: query
+ *         description: Platform the request originates from (e.g., 'app' or 'web')
+ *         required: false
+ *         schema:
+ *           type: string
+ *           enum: [app, web]
+ *           default: app
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - email
+ *             properties:
+ *               email:
+ *                 type: string
+ *                 format: email
+ *                 example: user@example.com
+ *     responses:
+ *       200:
+ *         description: OTP sent successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: true
+ *                 data:
+ *                   type: object
+ *                   nullable: true
+ *                 message:
+ *                   type: string
+ *                   example: Password reset OTP sent to John Doe on user@example.com
+ *       401:
+ *         description: Unauthorized (e.g., user does not exist)
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
+ *       422:
+ *         description: Validation error
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ValidationErrorResponse'
+ */
+accountsAuthRoutes.post("/request-password-reset", passwordResetLimiter, errorHandler(RequestPasswordReset));
+
+/**
+ * @openapi
+ * /accounts/auth/password-reset:
+ *   post:
+ *     summary: Reset user password
+ *     description: Resets the user's password using a valid OTP.
+ *     operationId: resetPassword
+ *     tags:
+ *       - Authentication
+ *     parameters:
+ *       - name: platform
+ *         in: query
+ *         description: Platform the request originates from (e.g., 'app' or 'web')
+ *         required: false
+ *         schema:
+ *           type: string
+ *           enum: [app, web]
+ *           default: app
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - email
+ *               - otp
+ *               - newPassword
+ *               - transactionReference
+ *             properties:
+ *               email:
+ *                 type: string
+ *                 format: email
+ *                 example: user@example.com
+ *               otp:
+ *                 type: string
+ *                 example: 123456
+ *               newPassword:
+ *                 type: string
+ *                 format: password
+ *                 minLength: 6
+ *                 example: NewPassword123!
+ *               transactionReference:
+ *                 type: string
+ *                 format: uuid
+ *                 example: 123e4567-e89b-12d3-a456-426614174000
+ *     responses:
+ *       200:
+ *         description: Password reset successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: true
+ *                 data:
+ *                   type: object
+ *                   nullable: true
+ *                 message:
+ *                   type: string
+ *                   example: Password reset successfully
+ *       400:
+ *         description: Bad request (e.g., invalid OTP)
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
+ *       401:
+ *         description: Unauthorized (e.g., user does not exist)
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
+ */
+accountsAuthRoutes.post("/password-reset", passwordResetLimiter,errorHandler(PasswordReset));
+
+/**
+ * @openapi
+ * /accounts/auth/account-delete-request:
+ *   post:
+ *     summary: Request account deletion
+ *     description: Initiates an account deletion request by sending an OTP to the authenticated user's email.
+ *     operationId: requestAccountDeletion
+ *     tags:
+ *       - Authentication
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - name: platform
+ *         in: query
+ *         description: Platform the request originates from (e.g., 'app' or 'web')
+ *         required: false
+ *         schema:
+ *           type: string
+ *           enum: [app, web]
+ *           default: app
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - email
+ *             properties:
+ *               email:
+ *                 type: string
+ *                 format: email
+ *                 example: user@example.com
+ *               reason:
+ *                 type: string
+ *                 nullable: true
+ *                 example: No longer need the account
+ *     responses:
+ *       200:
+ *         description: OTP sent for account deletion request
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: true
+ *                 data:
+ *                   type: object
+ *                   properties:
+ *                     transactionReference:
+ *                       type: string
+ *                       format: uuid
+ *                       example: 123e4567-e89b-12d3-a456-426614174000
+ *                 message:
+ *                   type: string
+ *                   example: OTP sent to John Doe on user@example.com to verify account deletion request
+ *       401:
+ *         description: Unauthorized (e.g., invalid token or email mismatch)
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
+ *       422:
+ *         description: Validation error
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ValidationErrorResponse'
+ */
+accountsAuthRoutes.post("/account-delete-request", authenticationMiddleware, errorHandler(RequestAccountDeletion));
+
+/**
+ * @openapi
+ * /accounts/auth/logout:
+ *   post:
+ *     summary: Log out a user
+ *     description: Logs out the authenticated user by clearing the JWT cookie and blacklisting the token.
+ *     operationId: logoutUser
+ *     tags:
+ *       - Authentication
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - name: platform
+ *         in: query
+ *         description: Platform the request originates from (e.g., 'app' or 'web')
+ *         required: false
+ *         schema:
+ *           type: string
+ *           enum: [app, web]
+ *           default: app
+ *     responses:
+ *       200:
+ *         description: Logged out successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: true
+ *                 data:
+ *                   type: object
+ *                   nullable: true
+ *                 message:
+ *                   type: string
+ *                   example: Logged out successfully
+ *       401:
+ *         description: Unauthorized (e.g., no active session)
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
+ */
+accountsAuthRoutes.post("/logout", authenticationMiddleware, errorHandler(logout));
+
+/**
+ * @openapi
+ * /accounts/auth/verify-account-deletion-otp:
+ *   post:
+ *     summary: Verify account deletion OTP
+ *     description: Verifies the OTP for an account deletion request and submits the deletion request for review.
+ *     operationId: verifyAccountDeletionOtp
+ *     tags:
+ *       - Authentication
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - name: platform
+ *         in: query
+ *         description: Platform the request originates from (e.g., 'app' or 'web')
+ *         required: false
+ *         schema:
+ *           type: string
+ *           enum: [app, web]
+ *           default: app
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - transactionReference
+ *               - code
+ *             properties:
+ *               transactionReference:
+ *                 type: string
+ *                 format: uuid
+ *                 example: 123e4567-e89b-12d3-a456-426614174000
+ *               code:
+ *                 type: string
+ *                 example: 123456
+ *     responses:
+ *       200:
+ *         description: Account deletion request submitted
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: true
+ *                 data:
+ *                   type: object
+ *                   properties:
+ *                     deletionRequestId:
+ *                       type: number
+ *                       example: 1
+ *                     transactionReference:
+ *                       type: string
+ *                       format: uuid
+ *                       example: 123e4567-e89b-12d3-a456-426614174000
+ *                 message:
+ *                   type: string
+ *                   example: Account deletion request submitted successfully for user@example.com. A confirmation email has been sent.
+ *       401:
+ *         description: Unauthorized (e.g., invalid OTP or user)
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
+ *       422:
+ *         description: Validation error
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ValidationErrorResponse'
+ */
+accountsAuthRoutes.post("/verify-account-deletion-otp", authenticationMiddleware, errorHandler(VerifyAccountDeletionOtp));
+
+/**
+ * @openapi
+ * /accounts/auth/verify-migration-otp:
+ *   post:
+ *     summary: Verify migration OTP for DELIVERY_REP to VENDOR
+ *     description: Verifies the OTP to migrate a DELIVERY_REP to a VENDOR role and issues new tokens.
+ *     operationId: verifyMigrationOtp
+ *     tags:
+ *       - Authentication
+ *     parameters:
+ *       - name: platform
+ *         in: query
+ *         description: Platform the request originates from (e.g., 'app' or 'web')
+ *         required: false
+ *         schema:
+ *           type: string
+ *           enum: [app, web]
+ *           default: app
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - email
+ *               - transactionReference
+ *               - otp
+ *             properties:
+ *               email:
+ *                 type: string
+ *                 format: email
+ *                 example: user@example.com
+ *               transactionReference:
+ *                 type: string
+ *                 format: uuid
+ *                 example: 123e4567-e89b-12d3-a456-426614174000
+ *               otp:
+ *                 type: string
+ *                 example: 123456
+ *     responses:
+ *       200:
+ *         description: Migration completed successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: true
+ *                 data:
+ *                   type: object
+ *                   properties:
+ *                     token:
+ *                       type: object
+ *                       properties:
+ *                         accessToken:
+ *                           type: string
+ *                           example: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
+ *                         refreshToken:
+ *                           type: string
+ *                           example: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
+ *                 message:
+ *                   type: string
+ *                   example: Vendor migration completed successfully. You can now access the Vendor Dashboard.
+ *       401:
+ *         description: Unauthorized (e.g., invalid OTP or ineligible user)
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
+ *       422:
+ *         description: Validation error
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ValidationErrorResponse'
+ */
+accountsAuthRoutes.post("/verify-migration-otp", errorHandler(verifyMigrationOTP));
+
+/**
+ * @openapi
+ * /api/v1/verify-account:
+ *   post:
+ *     summary: Verify user account (API endpoint)
+ *     description: Verifies a user's email or phone number using an OTP (alternative API endpoint).
+ *     operationId: verifyAccountApi
+ *     tags:
+ *       - Authentication
+ *     parameters:
+ *       - name: platform
+ *         in: query
+ *         description: Platform the request originates from (e.g., 'app' or 'web')
+ *         required: false
+ *         schema:
+ *           type: string
+ *           enum: [app, web]
+ *           default: app
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             $ref: '#/components/schemas/AccountVerifyRequest'
+ *     responses:
+ *       200:
+ *         description: Account verified successfully or new OTP sent
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/AccountVerifyResponse'
+ *       400:
+ *         description: Bad request (e.g., invalid OTP)
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
+ *       401:
+ *         description: Unauthorized (e.g., user does not exist)
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
+ */
+apiAuthRoutes.post("/verify-account", errorHandler(AccountVerify));
+
+/**
+ * @openapi
+ * components:
+ *   securitySchemes:
+ *     bearerAuth:
+ *       type: http
+ *       scheme: bearer
+ *       bearerFormat: JWT
+ *   schemas:
+ *     RegisterRequest:
+ *       type: object
+ *       required:
+ *         - email
+ *         - password
+ *         - firstName
+ *         - lastName
+ *       properties:
+ *         email:
+ *           type: string
+ *           format: email
+ *         password:
+ *           type: string
+ *           format: password
+ *           minLength: 6
+ *         firstName:
+ *           type: string
+ *         lastName:
+ *           type: string
+ *         role:
+ *           type: string
+ *           enum: [CUSTOMER, VENDOR, DELIVERY_REP, DELIVERY_AGENT, MANAGER, SUPERVISOR, FINANCE_MANAGER, ADMIN, STAFF, SERVICE_REP]
+ *           default: CUSTOMER
+ *         isSocialAccount:
+ *           type: boolean
+ *           default: false
+ *         socialAccountProvider:
+ *           type: string
+ *           nullable: true
+ *         address:
+ *           type: string
+ *           nullable: true
+ *         phoneNumber:
+ *           type: string
+ *           pattern: ^\+?[1-9]\d{1,14}$
+ *           nullable: true
+ *     RegisterResponse:
+ *       type: object
+ *       properties:
+ *         success:
+ *           type: boolean
+ *         data:
+ *           type: object
+ *           properties:
+ *             id:
+ *               type: string
+ *               format: uuid
+ *             email:
+ *               type: string
+ *               format: email
+ *             firstName:
+ *               type: string
+ *             lastName:
+ *               type: string
+ *             name:
+ *               type: string
+ *             role:
+ *               type: string
+ *             emailVerified:
+ *               type: boolean
+ *             createdAt:
+ *               type: string
+ *               format: date-time
+ *             transactionReference:
+ *               type: string
+ *               nullable: true
+ *         message:
+ *           type: string
+ *     AccountVerifyRequest:
+ *       type: object
+ *       required:
+ *         - medium
+ *         - otp
+ *         - transactionReference
+ *       properties:
+ *         medium:
+ *           type: string
+ *           enum: [EMAIL, SMS]
+ *         email:
+ *           type: string
+ *           format: email
+ *           nullable: true
+ *         phoneNumber:
+ *           type: string
+ *           pattern: ^\+?\d{10,15}$
+ *           nullable: true
+ *         otp:
+ *           type: string
+ *         transactionReference:
+ *           type: string
+ *         resend:
+ *           type: boolean
+ *           default: false
+ *       oneOf:
+ *         - required: [email]
+ *         - required: [phoneNumber]
+ *     AccountVerifyResponse:
+ *       type: object
+ *       properties:
+ *         success:
+ *           type: boolean
+ *         data:
+ *           type: object
+ *           properties:
+ *             user:
+ *               type: object
+ *               properties:
+ *                 id:
+ *                   type: string
+ *                   format: uuid
+ *                 email:
+ *                   type: string
+ *                   format: email
+ *                 name:
+ *                   type: string
+ *                 role:
+ *                   type: string
+ *             newTransactionReference:
+ *               type: string
+ *               nullable: true
+ *             message:
+ *               type: string
+ *               nullable: true
+ *         message:
+ *           type: string
+ *     ErrorResponse:
+ *       type: object
+ *       properties:
+ *         success:
+ *           type: boolean
+ *           example: false
+ *         error:
+ *           type: string
+ *         errorCode:
+ *           type: string
+ *     ValidationErrorResponse:
+ *       type: object
+ *       properties:
+ *         success:
+ *           type: boolean
+ *           example: false
+ *         error:
+ *           type: string
+ *         errorCode:
+ *           type: string
+ *         issues:
+ *           type: array
+ *           items:
+ *             type: object
+ *             properties:
+ *               path:
+ *                 type: array
+ *                 items:
+ *                   type: string
+ *               message:
+ *                 type: string
+ */
+
+export { accountsAuthRoutes, apiAuthRoutes };

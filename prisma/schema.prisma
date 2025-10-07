@@ -1,0 +1,2280 @@
+//Configures the Prisma Client generator to use the JavaScript client
+generator client {
+  provider        = "prisma-client-js"
+  previewFeatures  = ["postgresqlExtensions", "multiSchema"]
+  output          = "../node_modules/.prisma/client"
+  binaryTargets   = ["native", "linux-musl-openssl-3.0.x"]
+}
+
+// Defines the database connection using PostgreSQL and an environment variable for the URL
+datasource db {
+  provider   = "postgresql"
+  url        = env("POSTGRES_URL")
+  schemas    = ["public"]
+  extensions = [postgis]
+}
+
+enum IdentityVerificationType {
+  DRIVER_LICENSE
+  VOTER_CARD
+  INTERNATIONAL_PASSPORT
+  NIN
+  RESIDENCE_PERMIT
+
+  @@schema("public")
+}
+
+enum IssueType {
+  DELIVERY
+  PAYMENT
+  SERVICE
+  DEFECTIVE_PRODUCT
+  WRONG_ITEM
+  DELIVERY_ISSUE
+  GENERAL
+  PRODUCT
+
+  @@schema("public")
+}
+
+enum NotificationType {
+  NEW_ORDER
+  ORDER_UPDATE
+  ORDER_CANCELLED
+  FEEDBACK_SUBMITTED
+  EMAIL
+  SMS
+  PUSH
+  WEBHOOK
+  ALL
+  DISCOUNT // Exclusive discounts
+  PASSWORD_CHANGE // Password change alerts
+  WALLET_EVENT // Wallet events (e.g., deposit)
+  PREFERENCE_UPDATE // Preference updates
+
+  VENDOR_LINKING
+
+  @@schema("public")
+}
+
+enum ComplaintStatus {
+  PENDING
+  UNDER_REVIEW
+  RESOLVED
+  REJECTED
+
+  @@schema("public")
+}
+
+enum PaymentMethod {
+  MONNIFY
+  CARD
+  TRANSFER
+  WALLET
+  PAY_ON_DELIVERY
+  VIRTUAL_ACCOUNT
+  BANK_TRANSFER
+
+  @@schema("public")
+}
+
+enum AccessoryStatus {
+  ACTIVE
+  SUSPENDED
+  DELETED
+
+  @@schema("public")
+}
+
+enum AgentStatus {
+  AVAILABLE
+  ASSIGNED
+  PENDING
+  SUSPENDED
+  DELIVERED
+  BLOCKED
+
+  @@schema("public")
+}
+
+enum AccountDeletionStatus {
+  PENDING
+  UNDER_REVIEW
+  APPROVED
+  REJECTED
+
+  @@schema("public")
+}
+
+enum RevenueType {
+  SERVICE_CHARGE
+  TOPUP_CHARGE
+  DELIVERY_FEE
+  VAT
+
+  @@schema("public")
+}
+
+enum SocialAccountProvider {
+  FACEBOOK
+  GOOGLE
+
+  @@schema("public")
+}
+
+enum AppealStatus {
+  PENDING
+  APPROVED
+  REJECTED
+
+  @@schema("public")
+}
+
+enum TransactionType {
+  DEPOSIT
+  WITHDRAWAL
+  DEDUCTION
+  REFUND
+
+  @@schema("public")
+}
+
+enum TransactionStatus {
+  FAILED
+  PENDING
+  CONFIRMED
+  COMPLETED
+  PENDING_MANUAL
+  PENDING_DELIVERY
+  CANCELLED
+  REFUND
+
+  AWAITING_APPROVAL
+  REJECTED
+
+  @@schema("public")
+}
+
+enum WithdrawalLimitType {
+  DAILY_AMOUNT
+  DAILY_COUNT
+  AUTO_AMOUNT
+
+  @@schema("public")
+}
+
+enum DocumentStatus {
+  VERIFIED
+  NOT_VERIFIED
+  PENDING
+  UNDER_REVIEW
+
+  @@schema("public")
+}
+
+enum DocumentType {
+  NIN
+  INTERNATIONAL_PASSPORT
+  VOTER_CARD
+  DRIVING_LICENCE
+  RESIDENCE_PERMIT
+  CAC
+  SAFETY_CERTIFICATE
+  COMPLIANCE_CERTIFICATE
+  PLATE_NUMBER
+  VEHICLE_ROAD_LICENSE
+
+  @@schema("public")
+}
+
+enum VoucherType {
+  PERCENTAGE
+  FIXED
+
+  @@schema("public")
+}
+
+// Common verification status for all verification types
+enum VerificationStatus {
+  PENDING
+  APPROVED
+  REJECTED
+  INCOMPLETE
+
+  @@schema("public")
+}
+// Service status options
+enum ServiceStatus {
+  ACTIVE
+  INACTIVE
+  APPROVED
+  REJECTED
+  SUSPENDED
+  DISCONTINUED
+  PENDING_VERIFICATION
+
+  @@schema("public")
+}
+
+enum ServiceOrderStatus {
+  PENDING
+  PROCESSING
+  AGENT_ASSIGNED
+  OUT_FOR_DELIVERY
+  DELIVERED
+  CANCELLED
+  REJECTED
+  OUT_OF_STOCK
+  PAYMENT_RECEIVED
+  ORDER_RECEIVED
+
+  @@schema("public")
+}
+
+// License types - expanded based on Figma designs
+enum LicenseType {
+  DRIVERS_LICENSE
+  DRIVING_LICENSE
+  OPERATORS_LICENSE
+  BUSINESS
+  VEHICLE
+  SAFETY
+  OPERATIONAL
+
+  @@schema("public")
+}
+
+enum OrderStatus {
+  PENDING
+  PROCESSING
+  AGENT_ASSIGNED
+  OUT_FOR_DELIVERY
+  DELIVERED
+  CANCELLED
+  REJECTED
+  OUT_OF_STOCK
+  PAYMENT_RECEIVED
+  ORDER_RECEIVED
+  DISPUTED
+
+  @@schema("public")
+}
+
+enum ProductStatus {
+  PENDING
+  APPROVED
+  REJECTED
+
+  @@schema("public")
+}
+
+enum FeedbackStatus {
+  PENDING
+  RESOLVED
+  RESPONDED
+
+  @@schema("public")
+}
+
+enum DisputeStatus {
+  PENDING
+  RESOLVED
+
+  @@schema("public")
+}
+
+enum WithdrawalStatus {
+  PENDING
+  COMPLETED
+  FAILED
+
+  @@schema("public")
+}
+
+enum LocationStatus {
+  ENABLED
+  DISABLED
+  RESTRICTED
+
+  @@schema("public")
+}
+
+enum CrashStatus {
+  PENDING
+  UNDER_INVESTIGATION
+  PRIORITY
+  RESOLVED
+
+  @@schema("public")
+}
+
+enum StationType {
+  GAS
+  PETROL
+  DIESEL
+
+  @@schema("public")
+}
+
+model Rating {
+  id          String   @id @default(uuid()) @db.Uuid
+  userId      String   @db.Uuid
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  roleId      String   @db.Uuid
+  role        Role     @relation("RatingRoles", fields: [roleId], references: [id])
+  avgRating   Float    @default(0.0)
+  ratingCount Int      @default(0)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@unique([userId, roleId])
+  @@index([userId])
+  @@index([createdAt])
+  @@schema("public")
+}
+
+
+model User {
+  id                              String                      @id @default(uuid()) @db.Uuid
+  roleId                          String?                     @db.Uuid
+  role                            Role?                       @relation("UserRoles", fields: [roleId], references: [id])
+  email                           String                      @unique
+  username                        String?                     @unique @db.VarChar(50)
+  firstName                       String
+  lastName                        String
+  name                            String?
+  uniqueDeliveryId                String?                     @unique @db.VarChar(50)
+  deviceToken                     String?                     @db.VarChar(255)
+  phoneNumber                     String?                     @unique
+  phoneVerified                   Boolean                     @default(false)
+  identityVerified                Boolean                     @default(false)
+  bvnVerified                     Boolean                     @default(false)
+  businessVerified                Boolean                     @default(false)
+  webAccessGranted                Boolean                     @default(false)
+  webAccessGrantedAt              DateTime?
+  migratedToVendor                Boolean                     @default(false)
+  migrationDate                   DateTime?
+  createdAt                       DateTime                    @default(now())
+  updatedAt                       DateTime                    @updatedAt
+  inviteCode                      String?
+  publicKey                       String?
+  address                         String?
+  avatar                          String?
+  emailVerified                   Boolean                     @default(false)
+  password                        String?
+  isSocialAccount                 Boolean                     @default(false)
+  socialAccountProvider           SocialAccountProvider?
+  notificationsEnabled            Boolean                     @default(true)
+  twoFactorEnabled                Boolean                     @default(false)
+  twoFactorSecret                 String?                     @db.VarChar(255)
+  notificationPreference          NotificationType?
+  customerAddress                 CustomerAddress[]
+  walletTransactions              WalletTransaction[]
+  payOnDeliveryOrders             PayOnDeliveryOrder[]
+  profile                         Profile?                    @relation("UserToProfile")
+  orders                          ProductOrder[]              @relation("UserProductOrders")
+  vouchersCreated                 Voucher[]                   @relation("VoucherCreator")
+  payments                        Payment[]
+  wallet                          Wallet?
+  savedMeterNumbers               String[]                    @default([])
+  agentOrders                     ProductOrder[]              @relation("AgentProductOrders")
+  carts                           Cart[]
+  products                        Product[]
+  otps                            Otp[]
+  withdrawals                     Withdrawal[]                @relation("UserWithdrawals")
+  appInstallations                AppInstallation[]           @relation("UserInstallations")
+  isSuspended                     Boolean                     @default(false)
+  suspendedAt                     DateTime?
+  deletionRequestedAt             DateTime?
+  deletedAt                       DateTime?
+  isWithdrawalSuspended           Boolean                     @default(false)
+  withdrawalSuspendedAt           DateTime?
+  withdrawalSuspensionReason      String?                     @db.VarChar(255)
+  withdrawalSuspensionDuration    Int?
+  fraudAlerts                     FraudAlert[]                @relation("UserFraudAlerts")
+  vendorFraudAlerts               FraudAlert[]                @relation("VendorFraudAlerts")
+  smsTemplates                    SMSTemplate[]               @relation("UserToSMSTemplate")
+  emailTemplates                  EmailTemplate[]             @relation("UserToEmailTemplate")
+  auditLogs                       AuditLog[]                  @relation("UserAuditLogs")
+  gender                          String?                     @db.VarChar(20)
+  dateOfBirth                     DateTime?
+  crashReports                    CrashReport[]               @relation("UserCrashReports")
+  accountDeletionRequest          AccountDeletionRequest?     @relation
+  reviewedAccountDeletionRequests AccountDeletionRequest[]    @relation("ReviewedBy")
+  notificationLogsUser            NotificationLog[]           @relation("UserNotificationLogs")
+  notificationLogsVendor          NotificationLog[]           @relation("VendorNotificationLogs")
+  appealsAsUser                   Appeal[]                    @relation("AppealToUser")
+  bankCards                       BankCard[]                  @relation("UserToBankCard")
+  settings                        WalletSettings?             @relation("UserToWalletSettings")
+  bvnVerifications                BVNVerification[]           @relation("UserToBVNVerification")
+  notificationPreferences         NotificationPreference?     @relation("UserToNotificationPreference")
+  orderStatusHistory              OrderStatusHistory[]        @relation("UserOrderStatusHistory")
+  ratings                         Rating[]
+  orderReviews                    OrderReview[]
+  EventType                       EventType[]
+  givenFeedback                   Feedback[]                  @relation("FeedbackToUser")
+  receivedFeedback                Feedback[]                  @relation("FeedbackReceiver")
+  serviceOrders                   ServiceOrder[]              @relation("UserServiceOrders")
+  agentServiceOrders              ServiceOrder[]              @relation("AgentServiceOrders")
+  adminServiceOrders              ServiceOrder[]              @relation("AdminServiceOrders")
+  reviewedIdentityVerifications   IdentityVerification[]      @relation("IdentityVerificationReviewedBy")
+  identityVerification            IdentityVerification?       @relation("UserToIdentityVerification")
+  businessVerification            BusinessVerification?       @relation("UserToBusinessVerification")
+  pushToken                       String?                     @db.VarChar(255)
+  pushTemplates                   PushTemplate[]              @relation("UserToPushTemplate")
+  emailSettings                   EmailSettings[]             @relation("EmailSettingsToUser")
+  smsSettings                     SMSSettings[]               @relation("SMSSettingsToUser")
+  lastLoginAt                     DateTime?                   @map("last_login_at")
+  virtualAccounts                 VirtualAccount[]            @relation("UserToVirtualAccount")
+  voucherUsages                   VoucherUsage[]              @relation
+  reportsAsReporter               Report[]                    @relation("ReportReporter")
+  reportsAsAdmin                  Report[]                    @relation("ReportAdmin")
+  rewardRulesCreated              RewardRule[]                @relation("RewardRuleCreatedBy")
+  rewardRulesUpdated              RewardRule[]                @relation("RewardRuleUpdatedBy")
+  rewards                         Reward[]                    @relation("RewardToUser")
+  staff                           Staff?                      @relation
+  isWithdrawalAllowed             Boolean                     @default(false)
+  createdStaff                    Staff[]                     @relation("StaffCreatedBy")
+  isDeliveryAgent                 Boolean                     @default(false)
+  subAccounts                     SubAccount[]
+  isAdmin                         Boolean                     @default(false)
+  isVendor                        Boolean                     @default(false)
+  complaints                      Complaint[]                 @relation("UserComplaints")
+  assignedComplaints              Complaint[]                 @relation("AssignedTeamComplaints")
+  status                          String?                     @db.VarChar(50)
+  agentServices                   Services[]                  @relation("AgentServices")
+  banReason                       String?                     @db.VarChar(255)
+  blocked                         Boolean                     @default(false)
+  isPenalized                     Boolean                     @default(false)
+  serviceVerifications            ServiceVerification[]       @relation("UserToServiceVerification")
+  serviceOrderStatusHistory       ServiceOrderStatusHistory[] @relation("UserServiceOrderStatusHistory")
+  licenses                        License[]                   @relation("UserToLicense")
+  vehicles                        Vehicle[]                   @relation("UserToVehicle")
+  providerServices                Services[]                  @relation("ProviderServices")
+  createdServiceTypes             ServiceType[]               @relation("ServiceTypeCreatedBy")
+  createdProductTypes             ProductType[]               @relation("ProductTypeCreatedBy")
+  createdRoles                    Role[]                      @relation("RoleCreatedBy")
+  withdrawalLimitsUpdated         WithdrawalLimit[]           @relation("WithdrawalLimitUpdatedBy")
+  sessions                        Session[]                   @relation("UserToSessions")
+  identityVerificationStatusHistory IdentityVerificationStatusHistory[] @relation("UserIdentityVerificationStatusHistory")
+
+  @@index([roleId])
+  @@index([createdAt])
+  @@schema("public")
+}
+
+
+model Role {
+  id                  String            @id @default(uuid()) @db.Uuid
+  name                String            @unique @db.VarChar(50)
+  description         String?           @db.Text
+  isActive            Boolean           @default(true)
+  createdAt           DateTime          @default(now())
+  updatedAt           DateTime          @updatedAt
+  createdById         String?           @db.Uuid
+  createdBy           User?             @relation("RoleCreatedBy", fields: [createdById], references: [id])
+  users               User[]            @relation("UserRoles")
+  staff               Staff[]           @relation("StaffRoles")
+  ratings             Rating[]          @relation("RatingRoles")
+  feedbackGivers      Feedback[]        @relation("FeedbackGiverRoles")
+  feedbackReceivers   Feedback[]        @relation("FeedbackReceiverRoles")
+  profiles            Profile[]         @relation("ProfileRoles")
+  emailTemplates      EmailTemplate[]   @relation("EmailTemplateRoles")
+  smsTemplates        SMSTemplate[]     @relation("SMSTemplateRoles")
+  pushTemplates       PushTemplate[]    @relation("PushTemplateRoles")
+  webhooks            Webhook[]         @relation("WebhookRoles")
+  voucherRestrictedTo Voucher[]         @relation("VoucherRestrictedToRoles")
+  withdrawalLimits    WithdrawalLimit[] @relation("WithdrawalLimitRoles")
+  rolePrivileges      RolePrivilege[]   @relation("RoleToPrivileges")
+  eventTypeRoles      EventTypeRole[]   @relation 
+  
+  @@index([name])
+  @@index([createdById])
+  @@schema("public")
+}
+
+model Profile {
+  id                         String                                @id @default(uuid()) @db.Uuid
+  userId                     String                                @unique @db.Uuid
+  user                       User                                  @relation("UserToProfile", fields: [userId], references: [id], onDelete: Cascade)
+  roleId                     String                                @db.Uuid
+  role                       Role                                  @relation("ProfileRoles", fields: [roleId], references: [id])
+  status                     AgentStatus?
+  isWebEnabled               Boolean                               @default(false)
+  webEnabledAt               DateTime?
+  department                 String?                               @db.VarChar(100)
+  jobTitle                   String?                               @db.VarChar(100)
+  permissions                Json?
+  vehicleType                String?                               @db.VarChar(50)
+  vehiclePlate               String?                               @db.VarChar(20)
+  lastLocationLat            Float?
+  lastLocationLng            Float?
+  lastLocationAt             DateTime?
+  lastLocation               Unsupported("geometry(Point, 4326)")?
+  vendorId                   String?                               @db.Uuid
+  vendor                     Profile?                              @relation("VendorToAgents", fields: [vendorId], references: [id])
+  defaultDeliveryFee         Float?                                @default(0.0)
+  roleSpecificData           Json?
+  services                   Services[]                            @relation("VendorServices")
+  orders                     ProductOrder[]                        @relation("VendorProductOrders")
+  serviceOrders              ServiceOrder[]                        @relation("VendorToServiceOrders")
+  deliveryReps               Profile[]                             @relation("VendorToDeliveryReps")
+  agents                     Profile[]                             @relation("VendorToAgents")
+  deliveryRepVendor          Profile?                              @relation("VendorToDeliveryReps", fields: [profileId], references: [id])
+  servicesAsDeliveryRep      Services[]                            @relation("DeliveryRepServices")
+  feedbackAsAgent            Feedback[]                            @relation("AgentFeedback")
+  feedbackAsVendor           Feedback[]                            @relation("VendorFeedback")
+  customerReviews            Feedback[]                            @relation("CustomerReviews")
+  infractionsAsAgent         Infraction[]                          @relation("InfractionToAgent")
+  infractionsAsDeliveryRep   Infraction[]                          @relation("InfractionToDeliveryRep")
+  infractionsAsVendor        Infraction[]                          @relation("InfractionToVendor")
+  appealsAsVendor            Appeal[]                              @relation("AppealToVendor")
+  vendorWalletConfigs        VendorWalletConfig[]                  @relation("VendorToWalletConfig")
+  createdAt                  DateTime                              @default(now())
+  updatedAt                  DateTime                              @updatedAt
+  profileId                  String?                               @db.Uuid
+  businessVerificationStatus VerificationStatus?                   @default(PENDING)
+  identityVerificationStatus DocumentStatus?                       @default(PENDING)
+  serviceVerificationStatus  VerificationStatus?                   @default(PENDING)
+  businessVerification       BusinessVerification?                 @relation("ProfileToBusinessVerification")
+  identityVerification       IdentityVerification?                 @relation("ProfileToIdentityVerification")
+  serviceVerification        ServiceVerification?                  @relation("ProfileToServiceVerification")
+  wallet                     Wallet?                               @relation("ProfileToWallet")
+  savedAddresses             CustomerAddress[]                     @relation("ProfileToSavedAddresses")
+  savedCards                 BankCard[]                            @relation("ProfileToSavedCards")
+  favorites                  Favorite[]                            @relation("ProfileToFavorites")
+  walletBalance              Decimal?                              @default(0.00) @db.Decimal(10, 2)
+  avatar                     String?                               @db.Text
+  deliveries                 Int                                   @default(0)
+  rating                     Float?                                @default(0.0)
+  yearsOnPlatform            Float?                                @default(0.0)
+  achievements               Json?
+  fiveStarRatingsCount       Int?                                  @default(0)
+  reportsAsAgentProfile      Report[]                              @relation("ReportAgentProfile")
+  reportsAsVendor            Report[]                              @relation("ReportVendor")
+  staff                      Staff?                                @relation
+  avgRating                  Float?
+  ratingCount                Int?
+  fiveStarCount              Int?
+
+  @@index([userId])
+  @@index([roleId])
+  @@index([createdAt])
+  @@schema("public")
+}
+
+
+
+model Zone {
+  id              String         @id @default(uuid()) @db.Uuid
+  serviceId       String?        @db.Uuid
+  service         Services?      @relation("ServicesToZones", fields: [serviceId], references: [id], onDelete: Cascade)
+  name            String
+  minDeliveryDays Int
+  maxDeliveryDays Int
+  orderCutoffTime String         @db.VarChar(5)
+  status          Boolean        @default(true)
+  providerId      String         @db.Uuid
+  providerRole    String
+  address         String?        @db.Text
+  latitude        Float
+  longitude       Float
+  serviceRadius   Float?
+  priceMultiplier Float          @default(1.0)
+  createdAt       DateTime       @default(now())
+  updatedAt       DateTime       @updatedAt
+  serviceOrders   ServiceOrder[] @relation("ZoneToServiceOrders")
+
+  @@index([serviceId])
+  @@index([providerId])
+  @@schema("public")
+}
+
+model Complaint {
+  id                String          @id @default(uuid()) @db.Uuid
+  orderId           String?         @db.Uuid
+  order             ProductOrder?   @relation("ProductOrderComplaints", fields: [orderId], references: [id], onDelete: Cascade)
+  serviceOrderId    String?         @db.Uuid
+  serviceOrder      ServiceOrder?   @relation("ServiceOrderComplaints", fields: [serviceOrderId], references: [id], onDelete: Cascade)
+  productId         String?         @db.Uuid
+  product           Product?        @relation("ProductComplaints", fields: [productId], references: [id], onDelete: SetNull)
+  serviceId         String?         @db.Uuid
+  service           Services?       @relation("ServicesComplaints", fields: [serviceId], references: [id], onDelete: SetNull)
+  userId            String          @db.Uuid
+  user              User            @relation("UserComplaints", fields: [userId], references: [id], onDelete: Cascade)
+  issueType         IssueType       @default(GENERAL)
+  description       String          @db.Text
+  reason            String?         @db.Text
+  status            ComplaintStatus @default(PENDING)
+  internalNote      String?         @db.Text
+  resolutionDetails String?         @db.Text
+  assignedTeamId    String?         @db.Uuid
+  assignedTeam      User?           @relation("AssignedTeamComplaints", fields: [assignedTeamId], references: [id])
+  createdAt         DateTime        @default(now())
+  updatedAt         DateTime        @updatedAt
+  resolvedAt        DateTime?
+  images            String[]        @default([])
+  ticketId          String          @unique @db.VarChar(50)
+
+  @@index([orderId, productId, userId])
+  @@index([serviceOrderId])
+  @@index([serviceId])
+  @@index([createdAt])
+  @@schema("public")
+}
+
+model Staff {
+  id          String   @id @default(uuid()) @db.Uuid
+  userId      String   @unique @db.Uuid
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  profileId   String?  @unique @db.Uuid
+  profile     Profile? @relation(fields: [profileId], references: [id], onDelete: Cascade)
+  roleId      String?  @db.Uuid
+  role        Role?    @relation("StaffRoles", fields: [roleId], references: [id])
+  customRole  String?  @db.VarChar(50)
+  createdById String   @db.Uuid
+  createdBy   User     @relation("StaffCreatedBy", fields: [createdById], references: [id])
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  isActive    Boolean  @default(true)
+  metadata    Json?
+
+  @@index([userId, roleId])
+  @@index([createdById])
+  @@schema("public")
+}
+
+model NotificationPreference {
+  id                    String             @id @default(uuid()) @db.Uuid
+  userId                String             @unique @db.Uuid
+  user                  User               @relation("UserToNotificationPreference", fields: [userId], references: [id], onDelete: Cascade)
+  pushEnabled           Boolean            @default(true)
+  emailEnabled          Boolean            @default(true)
+  smsEnabled            Boolean            @default(true)
+  discountsEnabled      Boolean            @default(true)
+  passwordChangeEnabled Boolean            @default(true)
+  notificationTypes     NotificationType[] @default([])
+  createdAt             DateTime           @default(now())
+  updatedAt             DateTime           @updatedAt
+
+  @@index([userId])
+  @@index([createdAt])
+  @@schema("public")
+}
+
+model IdentityVerification {
+  id              String                   @id @default(uuid()) @db.Uuid
+  userId          String                   @unique @db.Uuid
+  user            User                     @relation("UserToIdentityVerification", fields: [userId], references: [id], onDelete: Cascade)
+  profileId       String                   @unique @db.Uuid
+  profile         Profile                  @relation("ProfileToIdentityVerification", fields: [profileId], references: [id], onDelete: Cascade)
+  documentType    IdentityVerificationType
+  country         String                   @db.VarChar(100)
+  frontImageUrl   String
+  backImageUrl    String?
+  selfieImageUrl  String
+  status          DocumentStatus           @default(PENDING)
+  reviewedById    String?                  @db.Uuid
+  reviewedBy      User?                    @relation("IdentityVerificationReviewedBy", fields: [reviewedById], references: [id])
+  reviewedAt      DateTime?
+  rejectionReason String?                  @db.Text
+  submittedAt     DateTime                 @default(now())
+  processedAt     DateTime?
+  createdAt       DateTime                 @default(now())
+  updatedAt       DateTime                 @updatedAt
+  deviceInfo      String?                  @db.Text
+  documentNumber  String                   @db.VarChar(100)
+  statusHistory   IdentityVerificationStatusHistory[] @relation("IdentityVerificationStatusHistory") // Added for status history
+ 
+  @@index([userId, status])
+  @@index([profileId])
+  @@schema("public")
+}
+
+model IdentityVerificationStatusHistory {
+  id             String           @id @default(uuid()) @db.Uuid
+  verificationId String           @db.Uuid
+  verification   IdentityVerification @relation("IdentityVerificationStatusHistory", fields: [verificationId], references: [id], onDelete: Cascade)
+  status         DocumentStatus
+  updatedById    String?          @db.Uuid
+  updatedBy      User?            @relation("UserIdentityVerificationStatusHistory", fields: [updatedById], references: [id])
+  notes          String?          @db.Text
+  createdAt      DateTime         @default(now())
+  @@index([verificationId])
+  @@index([createdAt])
+  @@schema("public")
+}
+
+model License {
+  id              String             @id @default(uuid()) @db.Uuid
+  userId          String             @db.Uuid
+  user            User               @relation("UserToLicense", fields: [userId], references: [id], onDelete: Cascade)
+  licenseType     LicenseType
+  licenseNumber   String
+  issuedBy        String?
+  issuedDate      DateTime?
+  expiryDate      DateTime?
+  documentUrl     String
+  documentBackUrl String
+  documentType    DocumentType
+  verified        Boolean            @default(false)
+  status          VerificationStatus @default(PENDING)
+  verifiedAt      DateTime?
+  rejectionReason String?
+  verifiedById    String?            @db.Uuid
+  services        Services[]         @relation("ServicesToLicenses")
+  createdAt       DateTime           @default(now())
+  updatedAt       DateTime           @updatedAt
+  urlStatuses     Json?
+
+  @@index([userId])
+  @@schema("public")
+}
+
+model Vehicle {
+  id                    String             @id @default(uuid()) @db.Uuid
+  userId                String             @db.Uuid
+  user                  User               @relation("UserToVehicle", fields: [userId], references: [id], onDelete: Cascade)
+  plateNumberUrl        String
+  driverLicenseUrl      String
+  vehicleRoadLicenseUrl String
+  verified              Boolean            @default(false)
+  status                VerificationStatus @default(PENDING)
+  verifiedAt            DateTime?
+  rejectionReason       String?
+  documentType          DocumentType
+  verifiedById          String?            @db.Uuid
+  services              Services[]         @relation("ServicesToVehicles")
+  plateNumber           String?
+  createdAt             DateTime           @default(now())
+  updatedAt             DateTime           @updatedAt
+  urlStatuses           Json?
+
+  @@index([userId])
+  @@schema("public")
+}
+
+model VendorWalletConfig {
+  id                      String          @id @default(uuid()) @db.Uuid
+  vendorId                String          @db.Uuid
+  deliveryAgentId         String          @db.Uuid
+  withdrawalEnabled       Boolean         @default(false)
+  depositEnabled          Boolean         @default(false)
+  withdrawalLimit         Decimal         @default(0.00) @db.Decimal(10, 2)
+  depositRequiresApproval Boolean         @default(true)
+  createdAt               DateTime        @default(now())
+  updatedAt               DateTime        @updatedAt
+  vendor                  Profile         @relation("VendorToWalletConfig", fields: [vendorId], references: [id])
+  wallet                  Wallet          @relation("WalletToVendorWalletConfig", fields: [deliveryAgentId], references: [id])
+  virtualAccount1Id       String?         @unique @db.Uuid
+  virtualAccount2Id       String?         @unique @db.Uuid
+  virtualAccount1         VirtualAccount? @relation("VendorWalletConfigToVirtualAccount1", fields: [virtualAccount1Id], references: [id], onDelete: SetNull)
+  virtualAccount2         VirtualAccount? @relation("VendorWalletConfigToVirtualAccount2", fields: [virtualAccount2Id], references: [id], onDelete: SetNull)
+
+  @@unique([vendorId, deliveryAgentId])
+  @@index([virtualAccount1Id])
+  @@index([virtualAccount2Id])
+  @@schema("public")
+}
+
+model ServiceType {
+  id          String      @id @default(uuid()) @db.Uuid
+  name        String      @unique @db.VarChar(50)
+  description String?     @db.Text
+  isActive    Boolean     @default(true)
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
+  createdById String?     @db.Uuid
+  createdBy   User?       @relation("ServiceTypeCreatedBy", fields: [createdById], references: [id])
+  services    Services[]  @relation("ServiceTypeToServices")
+  serviceOrders ServiceOrder[] @relation("ServiceTypeToServiceOrders")
+  categoryId  String?     @db.Uuid // Added to link to Category
+  category    Category?   @relation("CategoryToServiceTypes", fields: [categoryId], references: [id]) // Added relation to Category
+
+  @@index([categoryId])
+  @@schema("public")
+}
+
+
+
+model ServiceOrder {
+  id                  String                      @id @default(uuid()) @db.Uuid
+  userId              String?                     @db.Uuid
+  user                User?                       @relation("UserServiceOrders", fields: [userId], references: [id], onDelete: Cascade)
+  agentId             String?                     @db.Uuid
+  agent               User?                       @relation("AgentServiceOrders", fields: [agentId], references: [id], onDelete: Cascade)
+  serviceId           String?                     @db.Uuid
+  service             Services?                   @relation("ServicesToServiceOrders", fields: [serviceId], references: [id])
+  zoneId              String?                     @db.Uuid
+  zone                Zone?                       @relation("ZoneToServiceOrders", fields: [zoneId], references: [id])
+  vendorId            String?                     @db.Uuid
+  vendor              Profile?                    @relation("VendorToServiceOrders", fields: [vendorId], references: [id])
+  amountDue           Decimal                     @db.Decimal(10, 2)
+  deliveryFee         Decimal?                    @db.Decimal(10, 2)
+  serviceCharge       Decimal?                    @db.Decimal(10, 2)
+  paymentStatus       TransactionStatus           @default(PENDING)
+  status              ServiceOrderStatus          @default(PENDING)
+  createdAt           DateTime                    @default(now())
+  updatedAt           DateTime                    @updatedAt
+  feedbacks           Feedback[]                  @relation("ServiceOrderFeedbacks")
+  paymentId           String?                     @db.Uuid
+  payment             Payment?                    @relation("PaymentToServiceOrders", fields: [paymentId], references: [id])
+  deliveryAddressId   String?                     @db.Uuid
+  deliveryAddress     CustomerAddress?            @relation("ServiceOrderToCustomerAddress", fields: [deliveryAddressId], references: [id])
+  latitude            Float?
+  longitude           Float?
+  countryId           Int?
+  stateId             Int?
+  cityId              Int?
+  country             Country?                    @relation("CountryToServiceOrders", fields: [countryId], references: [id])
+  state               State?                      @relation("StateToServiceOrders", fields: [stateId], references: [id])
+  city                City?                       @relation("CityToServiceOrders", fields: [cityId], references: [id])
+  auditLogs           AuditLog[]                  @relation("AuditLogToServiceOrder")
+  virtualAccountId    String?                     @db.Uuid
+  virtualAccount      VirtualAccount?             @relation("VirtualAccountToServiceOrder", fields: [virtualAccountId], references: [id])
+  adminId             String?                     @db.Uuid
+  admin               User?                       @relation("AdminServiceOrders", fields: [adminId], references: [id], onDelete: SetNull)
+  walletTransactions  WalletTransaction[]         @relation("ServiceOrderTransactions")
+  reports             Report[]                    @relation("ReportToServiceOrder")
+  orderQuantity       Decimal?                    @db.Decimal(10, 2)
+  deliveryDistance    Float?
+  customerReference   String                     @unique @db.VarChar(50)
+  paymentMethod       PaymentMethod?              @default(PAY_ON_DELIVERY)
+  deliveryLatitude    Float?                      @default(0) @map("ST_Y(delivery_location::geometry)")
+  deliveryLongitude   Float?                      @default(0) @map("ST_X(delivery_location::geometry)")
+  confirmationCode    String?                     @db.VarChar(50)
+  voucherId           String?                     @db.Uuid
+  voucher             Voucher?                    @relation("ServiceOrderToVoucher", fields: [voucherId], references: [id])
+  deliveryTime        Decimal?                    @db.Decimal(10, 2)
+  statusHistory       ServiceOrderStatusHistory[] @relation("ServiceOrderStatusHistory")
+  billerCode          String?                     @db.VarChar(50)
+  itemCode            String?                     @db.VarChar(50)
+  meterNumber         String?                     @db.VarChar(255)
+  paymentDetails      Json?
+  meterType           String?                     @default("prepaid")
+  token               String?                     @db.Text
+  serviceFee          Float?
+  voucherDiscount     Float?
+  pointsDiscount      Float?
+  flutterwaveFee      Float?
+  monnifyFee          Float?
+  vat                 Float?
+  transactionRef      String?                     @db.VarChar(255)
+  payments            Payment[]                   @relation("ServiceOrderPayments")
+  fraudAlerts         FraudAlert[]                @relation("ServiceOrderFraudAlerts")
+  disputes            Dispute[]                   @relation("ServiceOrderDisputes")
+  payOnDeliveryOrders PayOnDeliveryOrder[]        @relation("ServiceOrderPayOnDelivery")
+  reviews             OrderReview[]               @relation("ServiceOrderReviews")
+  complaints          Complaint[]                 @relation("ServiceOrderComplaints")
+  serviceTypeId       String?                     @db.Uuid
+  serviceType         ServiceType?                @relation("ServiceTypeToServiceOrders", fields: [serviceTypeId], references: [id])
+
+  @@index([paymentId])
+  @@index([userId, agentId, serviceId, zoneId])
+  @@index([virtualAccountId])
+  @@index([adminId])
+  @@index([voucherId])
+  @@index([billerCode])
+  @@index([createdAt])
+  @@schema("public")
+}
+
+
+
+model ServiceOrderStatusHistory {
+  id             String             @id @default(uuid()) @db.Uuid
+  serviceOrderId String             @db.Uuid
+  serviceOrder   ServiceOrder       @relation("ServiceOrderStatusHistory", fields: [serviceOrderId], references: [id], onDelete: Cascade)
+  status         ServiceOrderStatus
+  updatedBy      String?            @db.Uuid
+  user           User?              @relation("UserServiceOrderStatusHistory", fields: [updatedBy], references: [id])
+  notes          String?            @db.Text
+  createdAt      DateTime           @default(now())
+
+  @@index([serviceOrderId])
+  @@index([createdAt])
+  @@schema("public")
+}
+
+model BVNVerification {
+  id              String   @id @default(uuid()) @db.Uuid
+  userId          String   @db.Uuid
+  user            User     @relation("UserToBVNVerification", fields: [userId], references: [id], onDelete: Cascade)
+  walletId        String?  @db.Uuid
+  wallet          Wallet?  @relation(fields: [walletId], references: [id], onDelete: Cascade)
+  bvn             String   @db.VarChar(11)
+  bankName        String?  @db.VarChar(255)
+  accountNumber   String?  @db.VarChar(10)
+  status          String   @db.VarChar(20)
+  responseDetails Json?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+  transactionRef  String   @unique @db.VarChar(255)
+
+  @@index([userId])
+  @@index([walletId])
+  @@index([createdAt])
+  @@schema("public")
+}
+
+model Accessory {
+  id          Int             @id @default(autoincrement())
+  name        String
+  description String?
+  price       Float
+  stockCount  Int             @default(0)
+  status      AccessoryStatus @default(ACTIVE)
+  createdAt   DateTime        @default(now())
+  updatedAt   DateTime        @updatedAt
+  orderItems  OrderItem[]
+
+  @@schema("public")
+}
+
+
+
+model Services {
+  id                     String                                 @id @default(uuid()) @db.Uuid
+  name                   String
+  description            String?                                @db.Text
+  serviceTypeId          String                                 @db.Uuid
+  serviceType            ServiceType                            @relation("ServiceTypeToServices", fields: [serviceTypeId], references: [id])
+  status                 ServiceStatus                          @default(PENDING_VERIFICATION)
+  isActive               Boolean                                @default(false)
+  pricePerUnit           Decimal                                @db.Decimal(10, 2)
+  deliveryCost           Decimal?                               @db.Decimal(10, 2)
+  minimumOrder           Int                                    @default(1)
+  maximumOrder           Int?
+  paymentOptions         String?                                @db.VarChar(255)
+  Contact                String?                                @db.VarChar(255)
+  businessHours          Json?
+  expectedDeliveryTime   Int?
+  address                String?                                @db.Text
+  logoUrl                String?                                @db.Text
+  longitude              Float?
+  latitude               Float?
+  location               Unsupported("geography(Point, 4326)")?
+  serviceRadius          Float?
+  countryId              Int?
+  stateId                Int?
+  cityId                 Int?
+  lgaId                  Int?
+  country                Country?                               @relation("ServicesToCountry", fields: [countryId], references: [id])
+  state                  State?                                 @relation("ServicesToState", fields: [stateId], references: [id])
+  city                   City?                                  @relation("ServicesToCity", fields: [cityId], references: [id])
+  lga                    Lga?                                   @relation("ServicesToLga", fields: [lgaId], references: [id])
+  providerId             String                                 @db.Uuid
+  provider               User                                   @relation("ProviderServices", fields: [providerId], references: [id], onDelete: Cascade)
+  providerRole           String                                 @db.VarChar(50)
+  businessVerificationId String?                                @db.Uuid
+  businessVerification   BusinessVerification?                  @relation("ServicesToBusinessVerification", fields: [businessVerificationId], references: [id], onDelete: Restrict)
+  deliveryRepId          String?                                @db.Uuid
+  deliveryRep            Profile?                               @relation("DeliveryRepServices", fields: [deliveryRepId], references: [id])
+  agentId                String?                                @db.Uuid
+  agent                  User?                                  @relation("AgentServices", fields: [agentId], references: [id])
+  verified               Boolean                                @default(false)
+  verifiedAt             DateTime?
+  verificationStatus     VerificationStatus                     @default(PENDING)
+  avgRating              Float?                                 @default(0.0)
+  ratingCount            Int?                                   @default(0)
+  serviceOrders          ServiceOrder[]                         @relation("ServicesToServiceOrders")
+  serviceReviews         ServiceReview[]                        @relation("ServicesToServiceReviews")
+  billerCode             String?                                @db.VarChar(50)
+  itemCode               String?                                @db.VarChar(50)
+  destinationBankCode    String?                                @db.VarChar(50)
+  destinationAccountNumber String?                              @db.VarChar(50)
+  serviceVerifications   ServiceVerification[]                  @relation("ServicesToVerifications")
+  disputes               Dispute[]                              @relation("ServicesDisputes")
+  zones                  Zone[]                                 @relation("ServicesToZones")
+  licenses               License[]                              @relation("ServicesToLicenses")
+  vehicles               Vehicle[]                              @relation("ServicesToVehicles")
+  vendorId               String?                                @db.Uuid
+  vendor                 Profile?                               @relation("VendorServices", fields: [vendorId], references: [id], onDelete: SetNull)
+  reviews                OrderReview[]                          @relation("ServicesReviews")
+  complaints             Complaint[]                            @relation("ServicesComplaints")
+  createdAt              DateTime                               @default(now())
+  updatedAt              DateTime                               @updatedAt
+  businessName           String?                                @db.VarChar(255)
+
+  @@index([providerId])
+  @@index([providerRole])
+  @@index([businessVerificationId])
+  @@index([serviceTypeId])
+  @@index([status])
+  @@index([isActive])
+  @@index([agentId])
+  @@index([lgaId])
+  @@index([vendorId])
+  @@schema("public")
+}
+
+
+// Reviews for services
+model ServiceReview {
+  id           String    @id @default(uuid()) @db.Uuid
+  rating       Int
+  comment      String?
+  reviewerName String
+  reviewerId   String    @db.Uuid
+  serviceId    String    @db.Uuid
+  service      Services  @relation("ServicesToServiceReviews", fields: [serviceId], references: [id])
+  createdAt    DateTime  @default(now())
+
+  @@index([serviceId])
+  @@index([reviewerId])
+  @@schema("public")
+}
+
+
+model BusinessVerification {
+  id                String             @id @default(uuid()) @db.Uuid
+  userId            String             @unique @db.Uuid
+  user              User               @relation("UserToBusinessVerification", fields: [userId], references: [id], onDelete: Cascade)
+  profileId         String?            @unique @db.Uuid
+  profile           Profile?           @relation("ProfileToBusinessVerification", fields: [profileId], references: [id], onDelete: Cascade)
+  businessName      String
+  rcNumber          String
+  businessAddress   String
+  tinNumber         String?
+  cacDocumentUrl    String
+  tinDocumentUrl    String?
+  proofOfAddressUrl String
+  logoUrl           String?
+  handles           Json?
+  status            VerificationStatus @default(PENDING)
+  documentType      DocumentType
+  rejectionReason   String?
+  adminId           String?
+  submittedAt       DateTime           @default(now())
+  processedAt       DateTime?
+  services          Services[]         @relation("ServicesToBusinessVerification")
+  urlStatuses       Json?
+
+  @@index([userId])
+  @@index([profileId])
+  @@index([status])
+  @@schema("public")
+}
+
+
+model ProductOrder {
+  id                  String               @id @default(uuid()) @db.Uuid
+  userId              String               @db.Uuid
+  user                User                 @relation("UserProductOrders", fields: [userId], references: [id])
+  vendorId            String?              @db.Uuid
+  vendor              Profile?             @relation("VendorProductOrders", fields: [vendorId], references: [id])
+  deliveryAddressId   String               @db.Uuid
+  deliveryAddress     CustomerAddress      @relation(fields: [deliveryAddressId], references: [id])
+  agentId             String?              @db.Uuid
+  agent               User?                @relation("AgentProductOrders", fields: [agentId], references: [id])
+  subtotal            Decimal              @db.Decimal(10, 2)
+  deliveryFee         Decimal              @db.Decimal(10, 2)
+  serviceCharge       Decimal              @db.Decimal(10, 2)
+  vatAmount           Decimal              @default(0.00) @db.Decimal(10, 2)
+  total               Decimal              @db.Decimal(10, 2)
+  confirmationCode    String               @db.VarChar(4)
+  paymentMethod       PaymentMethod
+  paymentStatus       TransactionStatus    @default(PENDING)
+  orderStatus         OrderStatus          @default(PENDING)
+  deliveryRepId       String?              @db.Uuid
+  countryId           Int?
+  stateId             Int?
+  lgaId               Int?
+  cityId              Int?
+  country             Country?             @relation("ProductOrderToCountry", fields: [countryId], references: [id])
+  state               State?               @relation("ProductOrderToState", fields: [stateId], references: [id])
+  lga                 Lga?                 @relation("ProductOrderToLga", fields: [lgaId], references: [id])
+  city                City?                @relation("ProductOrderToCity", fields: [cityId], references: [id])
+  items               OrderItem[]
+  reviews             OrderReview[]        @relation("ProductOrderReviews")
+  payOnDeliveryOrders PayOnDeliveryOrder[] @relation("ProductOrderPayOnDelivery")
+  disputes            Dispute[]            @relation("ProductOrderDisputes")
+  notes               String?
+  customerReference   String               @unique @db.VarChar(50)
+  deliveryNotes       String?              @db.Text
+  createdAt           DateTime             @default(now())
+  updatedAt           DateTime             @updatedAt
+  completedAt         DateTime?
+  deliveryTime        Int?
+  deliveryDistance    Float?
+  deliveryLocation    Unsupported("geometry(Point, 4326)")?
+  latitude            Float?               @default(0) @map("ST_Y(delivery_location::geometry)")
+  longitude           Float?               @default(0) @map("ST_X(delivery_location::geometry)")
+  auditLogs           AuditLog[]           @relation("AuditLogs")
+  auditLogsToOrder    AuditLog[]           @relation("AuditLogToProductOrder")
+  payments            Payment[]            @relation("ProductOrderPayments")
+  fraudAlerts         FraudAlert[]         @relation("ProductOrderFraudAlerts")
+  feedbacks           Feedback[]           @relation("ProductOrderFeedbacks")
+  statusHistory       OrderStatusHistory[] @relation("ProductOrderStatusHistory")
+  voucherId           String?              @db.Uuid
+  voucher             Voucher?             @relation("ProductOrderToVoucher", fields: [voucherId], references: [id])
+  complaints          Complaint[]          @relation("ProductOrderComplaints")
+  reports             Report[]             @relation("ReportToProductOrder")
+  walletTransactions  WalletTransaction[]  @relation("ProductOrderTransactions")
+  productTypeId       String?              @db.Uuid // Added
+  productType         ProductType?         @relation("ProductTypeToProductOrders", fields: [productTypeId], references: [id]) // Added
+
+  @@index([createdAt, customerReference])
+  @@index([productTypeId]) // Added index for productTypeId
+  @@schema("public")
+}
+
+
+model ServiceVerification {
+  id          String             @id @default(uuid()) @db.Uuid
+  serviceId   String?            @db.Uuid
+  service     Services?          @relation("ServicesToVerifications", fields: [serviceId], references: [id], onDelete: Cascade)
+  profileId   String?            @unique @db.Uuid
+  profile     Profile?           @relation("ProfileToServiceVerification", fields: [profileId], references: [id], onDelete: Cascade)
+  notes       String?
+  status      VerificationStatus @default(PENDING)
+  adminId     String?
+  submittedAt DateTime           @default(now())
+  processedAt DateTime?
+  userId      String?            @db.Uuid
+  user        User?              @relation("UserToServiceVerification", fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([status])
+  @@index([profileId])
+  @@index([serviceId])
+  @@schema("public")
+}
+
+
+model AuditLog {
+  id                  String        @id @default(uuid()) @db.Uuid
+  userId              String?       @db.Uuid
+  user                User?         @relation("UserAuditLogs", fields: [userId], references: [id], onDelete: Cascade)
+  action              String        @db.VarChar(255)
+  details             Json
+  createdAt           DateTime      @default(now())
+  notes               String?       @db.Text
+  entityType          String?       @db.VarChar(50)
+  entityId            String?       @db.Uuid
+  investigationStatus String?       @db.VarChar(50)
+  investigatedBy      String?       @db.Uuid
+  investigatedAt      DateTime?
+  orderId             String?       @db.Uuid
+  order               ProductOrder? @relation("AuditLogToProductOrder", fields: [orderId], references: [id], onDelete: Cascade)
+  orderAuditLogId     String?       @db.Uuid
+  orderAuditLogs      ProductOrder? @relation("AuditLogs", fields: [orderAuditLogId], references: [id], onDelete: Cascade)
+  serviceOrderId      String?       @db.Uuid
+  serviceOrder        ServiceOrder? @relation("AuditLogToServiceOrder", fields: [serviceOrderId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([createdAt])
+  @@index([entityType, entityId])
+  @@index([orderId])
+  @@index([orderAuditLogId])
+  @@index([serviceOrderId])
+  @@schema("public")
+}
+
+model WalletTransaction {
+  id                    String            @id @default(uuid()) @db.Uuid
+  userId                String            @db.Uuid
+  user                  User              @relation(fields: [userId], references: [id], onDelete: Cascade)
+  walletId              String            @db.Uuid
+  wallet                Wallet            @relation(fields: [walletId], references: [id], onDelete: Cascade)
+  transactionType       TransactionType?
+  amount                Decimal           @db.Decimal(10, 2)
+  topupCharge           Decimal?          @db.Decimal(10, 2)
+  serviceOrderId        String?           @db.Uuid
+  serviceOrder          ServiceOrder?     @relation("ServiceOrderTransactions", fields: [serviceOrderId], references: [id], onDelete: Cascade)
+  productOrderId        String?           @db.Uuid
+  productOrder          ProductOrder?     @relation("ProductOrderTransactions", fields: [productOrderId], references: [id], onDelete: Cascade)
+  payment               Payment?          @relation("WalletTransactionToPayment", fields: [paymentId], references: [id], onDelete: Cascade)
+  paymentId             String?           @db.Uuid
+  transactionRef        String?           @db.VarChar(255)
+  status                TransactionStatus @default(PENDING)
+  createdAt             DateTime          @default(now())
+  updatedAt             DateTime          @updatedAt
+  transfers             Transfer[]
+  billerCode            String?           @db.VarChar(50)
+  metadata              Json?
+  webhookAttempts       WebhookAttempt[]  @relation("TransactionWebhookAttempts")
+  vendorId              String?           @db.Uuid
+
+  @@index([createdAt])
+  @@index([vendorId])
+  @@index([serviceOrderId])
+  @@index([productOrderId])
+  @@index([billerCode])
+  @@schema("public")
+}
+
+model Otp {
+  id                   String   @id @default(uuid()) @db.Uuid
+  code                 String?
+  userId               String   @db.Uuid
+  expiresAt            DateTime
+  user                 User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  transactionReference String   @unique
+  phoneNumber          String?
+  email                String?
+  medium               String[]
+  verified             Boolean  @default(false)
+  attempts             Int      @default(0)
+  createdAt            DateTime @default(now())
+  updatedAt            DateTime @updatedAt
+  eventType            String? // Stores OTP purpose (e.g., ACCOUNT_VERIFICATION)
+  metadata             Json? // Added to store additional data like platform
+  verifiedAt           DateTime? // Add this field
+  
+  @@schema("public")
+}
+
+model Voucher {
+  id                String         @id @default(uuid()) @db.Uuid
+  code              String         @unique @db.VarChar(50)
+  discount          Decimal        @db.Decimal(5, 2)
+  type              VoucherType
+  maxUses           Int?
+  maxUsesPerUser    Int?
+  uses              Int            @default(0)
+  validFrom         DateTime       @default(now())
+  validUntil        DateTime
+  isActive          Boolean        @default(true)
+  appliesTo         String         @db.VarChar(20)
+  restrictedToRoles Role[]         @relation("VoucherRestrictedToRoles")
+  createdBy         User           @relation("VoucherCreator", fields: [createdById], references: [id])
+  createdById       String         @db.Uuid
+  createdAt         DateTime       @default(now())
+  updatedAt         DateTime       @updatedAt
+  updatedById       String?
+  orders            ProductOrder[] @relation("ProductOrderToVoucher")
+  voucherUsages     VoucherUsage[] @relation
+  serviceOrders     ServiceOrder[] @relation("ServiceOrderToVoucher")
+
+  @@schema("public")
+}
+
+model VoucherUsage {
+  id        Int      @id @default(autoincrement())
+  voucherId String   @db.Uuid // Changed from Int to String @db.Uuid
+  userId    String   @db.Uuid
+  voucher   Voucher  @relation(fields: [voucherId], references: [id], onDelete: Cascade)
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  usedAt    DateTime @default(now())
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([voucherId, userId])
+  @@schema("public")
+}
+
+model Favorite {
+  id         String   @id @default(uuid()) @db.Uuid
+  profileId  String   @db.Uuid
+  profile    Profile  @relation("ProfileToFavorites", fields: [profileId], references: [id], onDelete: Cascade)
+  entityType String   @db.VarChar(50) // e.g., "SERVICE", "PRODUCT", "VENDOR"
+  entityId   String   @db.Uuid // ID of the favorited entity (e.g., Service.id, Product.id, Profile.id)
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  @@index([profileId, entityType, entityId])
+  @@schema("public")
+}
+
+model Transfer {
+  id             Int               @id @default(autoincrement())
+  amount         Decimal           @db.Decimal(10, 2)
+  bankName       String            @db.VarChar(255)
+  accountNumber  String            @db.VarChar(255)
+  transactionId  String            @unique @db.Uuid
+  status         TransactionStatus @default(PENDING)
+  proofOfPayment String
+  createdAt      DateTime          @default(now())
+  transaction    WalletTransaction @relation(fields: [transactionId], references: [id])
+
+  @@schema("public")
+}
+
+model CustomerAddress {
+  id            String         @id @default(uuid()) @db.Uuid
+  userId        String         @db.Uuid
+  address       String
+  state         String?        @db.VarChar(50)
+  latitude      Float
+  longitude     Float
+  isDefault     Boolean        @default(false)
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
+  user          User           @relation(fields: [userId], references: [id], onDelete: Cascade, map: "CustomerAddress_user_fkey")
+  profile       Profile?       @relation("ProfileToSavedAddresses", fields: [userId], references: [userId], map: "CustomerAddress_profile_fkey")
+  orders        ProductOrder[] // For product orders
+  serviceOrders ServiceOrder[] @relation("ServiceOrderToCustomerAddress") // Added
+
+  @@unique([userId, address])
+  @@schema("public")
+}
+
+model SubAccount {
+  id             String   @id @default(uuid()) @db.Uuid
+  userId         String   @db.Uuid
+  subAccountCode String   @unique
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+  user           User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@schema("public")
+}
+
+model Feedback {
+  id              String         @id @default(uuid()) @db.Uuid
+  ticketId        String         @unique @db.VarChar(50)
+  giverId         String         @db.Uuid
+  giver           User           @relation("FeedbackToUser", fields: [giverId], references: [id])
+  giverRoleId     String         @db.Uuid
+  giverRole       Role           @relation("FeedbackGiverRoles", fields: [giverRoleId], references: [id])
+  receiverId      String         @db.Uuid
+  receiver        User           @relation("FeedbackReceiver", fields: [receiverId], references: [id])
+  receiverRoleId  String         @db.Uuid
+  receiverRole    Role           @relation("FeedbackReceiverRoles", fields: [receiverRoleId], references: [id])
+  comment         String?        @db.Text
+  rating          Int            @default(0)
+  status          FeedbackStatus @default(PENDING)
+  priority        String         @default("LOW") @db.VarChar(20)
+  issueType       IssueType      @default(GENERAL)
+  createdAt       DateTime       @default(now())
+  updatedAt       DateTime       @updatedAt
+  resolvedAt      DateTime?
+  agentProfileId  String?        @db.Uuid
+  agentProfile    Profile?       @relation("AgentFeedback", fields: [agentProfileId], references: [id])
+  vendorId        String?        @db.Uuid
+  vendor          Profile?       @relation("VendorFeedback", fields: [vendorId], references: [id])
+  orderId         String?        @db.Uuid
+  order           ProductOrder?  @relation("ProductOrderFeedbacks", fields: [orderId], references: [id])
+  serviceOrderId  String?        @db.Uuid
+  serviceOrder    ServiceOrder?  @relation("ServiceOrderFeedbacks", fields: [serviceOrderId], references: [id])
+  customerId      String?        @db.Uuid
+  customerProfile Profile?       @relation("CustomerReviews", fields: [customerId], references: [id])
+
+  @@index([createdAt])
+  @@schema("public")
+}
+
+model OrderReview {
+  id             String        @id @default(uuid()) @db.Uuid
+  comment        String        @db.Text
+  orderId        String?       @db.Uuid
+  order          ProductOrder? @relation("ProductOrderReviews", fields: [orderId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  serviceOrderId String?       @db.Uuid
+  serviceOrder   ServiceOrder? @relation("ServiceOrderReviews", fields: [serviceOrderId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  serviceId      String?       @db.Uuid
+  service        Services?     @relation("ServicesReviews", fields: [serviceId], references: [id], onDelete: SetNull)
+  user           User          @relation(fields: [userId], references: [id])
+  userId         String        @db.Uuid
+  rating         Int           @default(0)
+  createdAt      DateTime      @default(now())
+
+  @@index([orderId])
+  @@index([serviceOrderId])
+  @@index([serviceId])
+  @@schema("public")
+}
+
+model Session {
+  id        String   @id @default(uuid()) @db.Uuid
+  userId    String   @db.Uuid
+  user      User     @relation("UserToSessions", fields: [userId], references: [id], onDelete: Cascade)
+  token     String   @unique @db.Text
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  metadata  Json?
+
+  @@index([userId])
+  @@index([expiresAt])
+  @@schema("public")
+}
+
+model PayOnDeliveryOrder {
+  id             String            @id @default(uuid()) @db.Uuid
+  orderId        String?           @db.Uuid // Made optional
+  order          ProductOrder?     @relation("ProductOrderPayOnDelivery", fields: [orderId], references: [id], onDelete: Cascade) // Updated relation name
+  serviceOrderId String?           @db.Uuid // Added
+  serviceOrder   ServiceOrder?     @relation("ServiceOrderPayOnDelivery", fields: [serviceOrderId], references: [id], onDelete: Cascade) // Added
+  phoneNumber    String            @db.VarChar(20)
+  amountDue      Decimal           @db.Decimal(10, 2)
+  status         TransactionStatus @default(PENDING)
+  createdAt      DateTime          @default(now())
+  user           User?             @relation(fields: [userId], references: [id])
+  userId         String?           @db.Uuid
+
+  @@index([orderId])
+  @@index([serviceOrderId])
+  @@schema("public")
+}
+
+model Payment {
+  id                    String               @id @default(uuid()) @db.Uuid
+  userId                String               @db.Uuid
+  transactionRef        String?              @db.VarChar(54)
+  flwRef                String?              @db.VarChar(255)
+  monnifyRef            String?              @db.VarChar(255)
+  productType           String?
+  serviceType           String?
+  billerCode            String?              @db.VarChar(50) // Replaced providerId
+  serviceOrderId        String?              @db.Uuid
+  meterNumber           String?              @db.VarChar(255)
+  paymentLink           String?
+  amount                Float
+  requestedAmount       Float?
+  topupCharge           Float?
+  status                String
+  paymentMethod         PaymentMethod
+  createdAt             DateTime             @default(now())
+  updatedAt             DateTime             @updatedAt
+  paymentDetails        Json?
+  user                  User                 @relation(fields: [userId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  provider              PaymentProvider?     @relation("PaymentToProvider", fields: [providerId], references: [id], onDelete: Cascade)
+  providerId            Int?
+  serviceOrder          ServiceOrder?        @relation("ServiceOrderPayments", fields: [serviceOrderId], references: [id], onDelete: Cascade)
+  walletTransactions    WalletTransaction[]  @relation("WalletTransactionToPayment")
+  orderId               String?              @db.Uuid
+  order                 ProductOrder?        @relation("ProductOrderPayments", fields: [orderId], references: [id])
+  fraudAlerts           FraudAlert[]         @relation("PaymentFraudAlerts")
+  serviceOrders         ServiceOrder[]       @relation("PaymentToServiceOrders")
+
+  @@index([transactionRef])
+  @@index([monnifyRef])
+  @@index([createdAt])
+  @@index([serviceOrderId])
+  @@index([billerCode]) // Added index for billerCode
+  @@schema("public")
+}
+
+model Report {
+  id             String        @id @default(uuid()) @db.Uuid
+  reporterId     String        @db.Uuid
+  reporter       User          @relation("ReportReporter", fields: [reporterId], references: [id], onDelete: Cascade)
+  adminId        String?       @db.Uuid
+  admin          User?         @relation("ReportAdmin", fields: [adminId], references: [id], onDelete: SetNull)
+  category       String        @db.VarChar(50)
+  details        String?       @db.Text
+  imageUrl       String?       @db.Text
+  status         String        @default("PENDING") @db.VarChar(20)
+  createdAt      DateTime      @default(now())
+  updatedAt      DateTime      @updatedAt
+  resolvedAt     DateTime?
+  agentProfileId String?       @db.Uuid
+  agentProfile   Profile?      @relation("ReportAgentProfile", fields: [agentProfileId], references: [id], onDelete: SetNull)
+  vendorId       String?       @db.Uuid
+  vendor         Profile?      @relation("ReportVendor", fields: [vendorId], references: [id], onDelete: SetNull)
+  reporterName   String?       @db.VarChar(100)
+  reporterPhone  String?       @db.VarChar(20)
+  serviceOrderId String?       @db.Uuid
+  serviceOrder   ServiceOrder? @relation("ReportToServiceOrder", fields: [serviceOrderId], references: [id], onDelete: SetNull)
+  productOrderId String?       @db.Uuid
+  productOrder   ProductOrder? @relation("ReportToProductOrder", fields: [productOrderId], references: [id], onDelete: SetNull)
+  documentId     String?       @db.VarChar(255)
+
+  @@index([reporterId, adminId])
+  @@index([createdAt])
+  @@index([serviceOrderId])
+  @@index([productOrderId])
+  @@schema("public")
+}
+
+
+
+model Wallet {
+  id                   String               @id @default(uuid()) @db.Uuid
+  userId               String               @unique @db.Uuid
+  balance              Decimal              @default(0.00) @db.Decimal(10, 2)
+  totalTopupCharge     Decimal?             @db.Decimal(10, 2)
+  vendorLinkedAccount1 String?              @db.VarChar(255) // Vendor's primary virtual account 1
+  vendorLinkedAccount2 String?              @db.VarChar(255) // Vendor's primary virtual account 2
+  vendorBankName       String?              @db.VarChar(255) // Bank name for vendor's virtual accounts
+  metadata             Json?
+  createdAt            DateTime             @default(now())
+  updatedAt            DateTime             @updatedAt
+  user                 User                 @relation(fields: [userId], references: [id], onDelete: Cascade)
+  profile              Profile?             @relation("ProfileToWallet", fields: [id], references: [id])
+  transactions         WalletTransaction[] // Tracks delivery fees (agent), service fees (vendor), service charges (admin)
+  withdrawals          Withdrawal[]
+  bankCards            BankCard[]
+  settings             WalletSettings?
+  bvnVerifications     BVNVerification[]
+  vendorWalletConfigs  VendorWalletConfig[] @relation("WalletToVendorWalletConfig")
+  virtualAccounts      VirtualAccount[]     @relation("WalletToVirtualAccount")
+  accountNumber        String?              @db.VarChar(255)
+
+  @@schema("public")
+}
+
+model PaymentProvider {
+  id                      Int       @id @default(autoincrement())
+  name                    String    @unique
+  flutterwave_biller_code String?   @unique
+  providerKey             String? // Added
+  description             String?
+  createdAt               DateTime  @default(now())
+  updatedAt               DateTime  @updatedAt
+  payments                Payment[] @relation("PaymentToProvider")
+
+  @@schema("public")
+}
+
+model Category {
+  id           String        @id @default(uuid()) @db.Uuid
+  name         String        @unique
+  description  String?
+  imageUrl     String        @default("https://via.placeholder.com/150")
+  active       Boolean       @default(true)
+  products     Product[]
+  serviceTypes ServiceType[] @relation("CategoryToServiceTypes") // Changed from services to serviceTypes
+  images       String[]
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @updatedAt
+  productTypes ProductType[] @relation("ProductTypeToCategory")
+
+  @@schema("public")
+}
+
+
+
+model ProductType {
+  id          String        @id @default(uuid()) @db.Uuid
+  name        String        @unique @db.VarChar(50)
+  description String?       @db.Text
+  categoryId  String?       @db.Uuid
+  category    Category?     @relation("ProductTypeToCategory", fields: [categoryId], references: [id])
+  isActive    Boolean       @default(true)
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
+  createdById String?       @db.Uuid
+  createdBy   User?         @relation("ProductTypeCreatedBy", fields: [createdById], references: [id])
+  products    Product[]     @relation("ProductTypeToProducts")
+  productOrders ProductOrder[] @relation("ProductTypeToProductOrders") // Added relation to ProductOrder
+
+  @@index([categoryId])
+  @@schema("public")
+}
+
+model Product {
+  id             String        @id @default(uuid()) @db.Uuid
+  name           String
+  description    String
+  price          Decimal       @db.Decimal(10, 2)
+  salePrice      Decimal?      @db.Decimal(10, 2)
+  imageUrl       String?
+  images         String[]      @default([])
+  brand          String?
+  size           String?
+  stock          Int           @default(0)
+  status         ProductStatus @default(PENDING)
+  featured       Boolean       @default(false)
+  productTypeId  String?       @db.Uuid
+  productType    ProductType?  @relation("ProductTypeToProducts", fields: [productTypeId], references: [id])
+  categoryId     String?       @db.Uuid
+  category       Category?     @relation(fields: [categoryId], references: [id])
+  productOwnerId String        @db.Uuid
+  productOwner   User          @relation(fields: [productOwnerId], references: [id])
+  rating         Decimal?      @db.Decimal(2, 1)
+  orderCount     Int           @default(0)
+  cartItems      CartItem[]
+  disputes       Dispute[]     @relation("ProductDisputes")
+  orderItems     OrderItem[]
+  complaints     Complaint[]   @relation("ProductComplaints")
+  createdAt      DateTime      @default(now())
+  updatedAt      DateTime      @updatedAt
+
+  @@index([createdAt])
+  @@index([productTypeId])
+  @@schema("public")
+}
+
+model Cart {
+  id        String     @id @default(uuid()) @db.Uuid
+  userId    String     @unique @db.Uuid
+  user      User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  items     CartItem[]
+  createdAt DateTime   @default(now())
+  updatedAt DateTime   @updatedAt
+
+  @@schema("public")
+}
+
+
+model ContactOption {
+  id            Int      @id @default(autoincrement())
+  method        String   @db.VarChar(50) // e.g., "Email", "WhatsApp", "Phone"
+  details       String   @db.Text // e.g., email address, phone number
+  responseTime  String?  @db.VarChar(100) // e.g., "Within 24 hours"
+  businessHours String?  @db.VarChar(100) // e.g., "9 AM - 5 PM"
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+  isActive      Boolean  @default(true)
+
+  @@schema("public")
+}
+
+model CartItem {
+  id        String   @id @default(uuid()) @db.Uuid
+  cartId    String   @db.Uuid
+  cart      Cart     @relation(fields: [cartId], references: [id], onDelete: Cascade)
+  productId String   @db.Uuid
+  product   Product  @relation(fields: [productId], references: [id])
+  quantity  Int
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([cartId, productId])
+  @@schema("public")
+}
+
+model Infraction {
+  id            String    @id @default(uuid()) @db.Uuid
+  agentId       String?   @db.Uuid
+  deliveryRepId String?   @db.Uuid
+  vendorId      String?   @db.Uuid
+  type          String    @db.VarChar(50)
+  reason        String    @db.VarChar(255)
+  issuedAt      DateTime  @default(now())
+  expiresAt     DateTime?
+  agent         Profile?  @relation("InfractionToAgent", fields: [agentId], references: [id])
+  deliveryRep   Profile?  @relation("InfractionToDeliveryRep", fields: [deliveryRepId], references: [id], map: "Infraction_deliveryRep_fkey")
+  vendor        Profile?  @relation("InfractionToVendor", fields: [vendorId], references: [id], map: "Infraction_vendor_fkey")
+
+  @@schema("public")
+}
+
+model OrderItem {
+  id          String       @id @default(uuid()) @db.Uuid
+  orderId     String       @db.Uuid
+  order       ProductOrder @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  productId   String?      @db.Uuid
+  product     Product?     @relation(fields: [productId], references: [id])
+  accessoryId Int?
+  accessory   Accessory?   @relation(fields: [accessoryId], references: [id])
+  quantity    Int
+  price       Decimal      @db.Decimal(10, 2)
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+
+  @@unique([orderId, productId])
+  @@unique([orderId, accessoryId])
+  @@schema("public")
+}
+
+model PaymentConfig {
+  id            Int      @id @default(autoincrement())
+  paymentMethod String   @unique
+  isEnabled     Boolean  @default(true)
+  gateway       String?
+  publicKey     String? // Store encrypted public key
+  secretKey     String? // Store encrypted secret key
+  contractCode  String? // Added field
+  updatedAt     DateTime @updatedAt
+  updatedBy     String?
+
+  @@schema("public")
+}
+
+model Dispute {
+  id             String        @id @default(uuid()) @db.Uuid
+  orderId        String?       @db.Uuid
+  order          ProductOrder? @relation("ProductOrderDisputes", fields: [orderId], references: [id], onDelete: Cascade)
+  serviceOrderId String?       @db.Uuid
+  serviceOrder   ServiceOrder? @relation("ServiceOrderDisputes", fields: [serviceOrderId], references: [id], onDelete: Cascade)
+  productId      String?       @db.Uuid
+  product        Product?      @relation("ProductDisputes", fields: [productId], references: [id], onDelete: SetNull)
+  serviceId      String?       @db.Uuid
+  service        Services?     @relation("ServicesDisputes", fields: [serviceId], references: [id], onDelete: SetNull)
+  reason         String        @db.Text
+  riskFactors    Boolean       @default(false)
+  internalNotes  String?       @db.Text
+  status         DisputeStatus @default(PENDING)
+  createdAt      DateTime      @default(now())
+  updatedAt      DateTime      @updatedAt
+
+  @@index([createdAt])
+  @@index([orderId])
+  @@index([serviceOrderId])
+  @@index([productId])
+  @@index([serviceId])
+  @@schema("public")
+}
+
+
+model Withdrawal {
+  id                 String           @id @default(uuid()) @db.Uuid
+  userId             String           @db.Uuid
+  user               User             @relation("UserWithdrawals", fields: [userId], references: [id], onDelete: Cascade)
+  walletId           String?          @db.Uuid
+  wallet             Wallet?          @relation(fields: [walletId], references: [id], onDelete: Cascade)
+  amount             Decimal          @db.Decimal(10, 2)
+  bankName           String           @db.VarChar(255)
+  accountNumber      String?          @db.VarChar(255)
+  status             WithdrawalStatus @default(PENDING)
+  createdAt          DateTime         @default(now())
+  updatedAt          DateTime         @updatedAt
+  deliveryRepId      String?          @db.Uuid
+  vendorId           String?          @db.Uuid
+  processedAt        DateTime?
+  transactionRef     String?          @unique @db.VarChar(255)
+  isAccountValidated Boolean          @default(false)
+  validatedBy        String?          @db.Uuid
+  validationDate     DateTime?
+  bvnVerified        Boolean          @default(false)
+
+  @@index([createdAt])
+  @@schema("public")
+}
+
+model WithdrawalLimit {
+  id            Int                 @id @default(autoincrement())
+  roleId        String              @db.Uuid
+  role          Role                @relation("WithdrawalLimitRoles", fields: [roleId], references: [id])
+  limitType     WithdrawalLimitType
+  limitValue    Decimal             @db.Decimal(10, 2)
+  createdAt     DateTime            @default(now())
+  updatedAt     DateTime            @updatedAt
+  updatedBy     String              @db.Uuid
+  updatedByUser User?               @relation("WithdrawalLimitUpdatedBy", fields: [updatedBy], references: [id])
+
+  @@unique([roleId, limitType])
+  @@schema("public")
+}
+
+model QuicrifillWallet {
+  id            String                 @id @default(uuid()) @db.Uuid
+  accountNumber String                 @db.VarChar(255)
+  bankName      String                 @db.VarChar(255)
+  balance       Decimal                @default(0.00) @db.Decimal(10, 2)
+  createdAt     DateTime               @default(now())
+  updatedAt     DateTime               @updatedAt
+  withdrawals   QuicrifillWithdrawal[] @relation("QuicrifillWalletToWithdrawal")
+
+  @@schema("public")
+}
+
+model QuicrifillWithdrawal {
+  id             String            @id @default(uuid()) @db.Uuid
+  walletId       String            @db.Uuid
+  wallet         QuicrifillWallet  @relation("QuicrifillWalletToWithdrawal", fields: [walletId], references: [id], onDelete: Cascade)
+  amount         Decimal           @db.Decimal(10, 2)
+  bankName       String            @db.VarChar(255)
+  accountNumber  String            @db.VarChar(255)
+  status         TransactionStatus @default(PENDING)
+  createdAt      DateTime          @default(now())
+  updatedAt      DateTime          @updatedAt
+  processedAt    DateTime?
+  transactionRef String?           @db.VarChar(255)
+  requestedBy    String            @db.Uuid
+
+  @@index([createdAt])
+  @@schema("public")
+}
+
+model AppInstallation {
+  id           String        @id @default(uuid()) @db.Uuid
+  userId       String?       @db.Uuid
+  user         User?         @relation("UserInstallations", fields: [userId], references: [id], onDelete: Cascade)
+  deviceType   String        @db.VarChar(50)
+  deviceId     String        @unique @db.VarChar(255)
+  deviceToken  String?       @db.VarChar(255)
+  isRecognized Boolean       @default(false)
+  recognizedAt DateTime?
+  isBanned     Boolean       @default(false)
+  bannedAt     DateTime?
+  banReason    String?       @db.VarChar(255)
+  createdAt    DateTime      @default(now())
+  crashReports CrashReport[] @relation("InstallationCrashReports")
+  blocked      Boolean       @default(false)
+  isSuspended  Boolean       @default(false)
+  isPenalized  Boolean       @default(false)
+
+  @@index([createdAt])
+  @@index([userId, deviceId])
+  @@schema("public")
+}
+
+model Country {
+  id            Int            @id @default(autoincrement())
+  name          String         @unique @db.VarChar(100)
+  code          String         @unique @db.VarChar(3)
+  status        LocationStatus @default(ENABLED)
+  restrictions  Json?
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
+  states        State[]
+  productOrders ProductOrder[] @relation("ProductOrderToCountry")
+  services      Services[]     @relation("ServicesToCountry")
+  serviceOrders ServiceOrder[] @relation("CountryToServiceOrders")
+
+  @@schema("public")
+}
+
+model State {
+  id            Int            @id @default(autoincrement())
+  name          String         @db.VarChar(100)
+  countryId     Int
+  country       Country        @relation(fields: [countryId], references: [id], onDelete: Cascade)
+  status        LocationStatus @default(ENABLED)
+  restrictions  Json?
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
+  lgas          Lga[]
+  productOrders ProductOrder[] @relation("ProductOrderToState")
+  services      Services[]     @relation("ServicesToState")
+  serviceOrders ServiceOrder[] @relation("StateToServiceOrders")
+  cities        City[]         @relation("CityToState")
+
+  @@unique([name, countryId])
+  @@schema("public")
+}
+
+model City {
+  id            Int                                    @id @default(autoincrement())
+  name          String                                 @db.VarChar(100)
+  lgaId         Int
+  lga           Lga                                    @relation(fields: [lgaId], references: [id], onDelete: Cascade)
+  stateId       Int
+  state         State                                  @relation("CityToState", fields: [stateId], references: [id], onDelete: Cascade)
+  status        LocationStatus                         @default(ENABLED)
+  restrictions  Json?
+  location      Unsupported("geography(Point, 4326)")?
+  createdAt     DateTime                               @default(now())
+  updatedAt     DateTime                               @updatedAt
+  productOrders ProductOrder[]                         @relation("ProductOrderToCity")
+  services      Services[]                             @relation("ServicesToCity")
+  serviceOrders ServiceOrder[]                         @relation("CityToServiceOrders")
+
+  @@unique([name, lgaId])
+  @@index([stateId])
+  @@schema("public")
+}
+
+model Lga {
+  id            Int            @id @default(autoincrement())
+  name          String         @db.VarChar(100)
+  stateId       Int
+  state         State          @relation(fields: [stateId], references: [id], onDelete: Cascade)
+  status        LocationStatus @default(ENABLED)
+  restrictions  Json?
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
+  cities        City[]
+  productOrders ProductOrder[] @relation("ProductOrderToLga")
+  services      Services[]     @relation("ServicesToLga")
+
+  @@unique([name, stateId])
+  @@schema("public")
+}
+
+model VirtualAccount {
+  id                  String              @id @default(uuid()) @db.Uuid
+  userId              String              @db.Uuid
+  user                User                @relation("UserToVirtualAccount", fields: [userId], references: [id], onDelete: Cascade)
+  walletId            String              @db.Uuid
+  wallet              Wallet              @relation("WalletToVirtualAccount", fields: [walletId], references: [id], onDelete: Cascade)
+  vendorId            String?             @db.Uuid // Links to vendor's userId if assigned to a delivery agent
+  accountNumber       String              @db.VarChar(255)
+  bankName            String              @db.VarChar(255)
+  status              String              @db.VarChar(50) // e.g., "ACTIVE", "DELETED"
+  monnifyRef          String              @db.VarChar(255)
+  isVendorMain        Boolean             @default(false) // True for vendor's main accounts, false for agent sub-accounts
+  metadata            Json? // e.g., {"type": "agent_sub"}
+  createdAt           DateTime            @default(now())
+  updatedAt           DateTime            @updatedAt
+  serviceOrders       ServiceOrder[]      @relation("VirtualAccountToServiceOrder") // Links to ServiceOrder payments
+  vendorWalletConfig1 VendorWalletConfig? @relation("VendorWalletConfigToVirtualAccount1")
+  vendorWalletConfig2 VendorWalletConfig? @relation("VendorWalletConfigToVirtualAccount2")
+
+  @@index([userId])
+  @@index([vendorId])
+  @@index([walletId])
+  @@schema("public")
+}
+
+model FraudAlert {
+  id           String        @id @default(uuid()) @db.Uuid
+  type         String        @db.VarChar(50)
+  entityId     String        @db.Uuid
+  entityType   String        @db.VarChar(50)
+  reason       String        @db.Text
+  userId       String?       @db.Uuid
+  vendorId     String?       @db.Uuid
+  createdAt    DateTime      @default(now())
+  resolvedAt   DateTime?
+  status       String        @default("PENDING")
+  user         User?         @relation("UserFraudAlerts", fields: [userId], references: [id])
+  vendor       User?         @relation("VendorFraudAlerts", fields: [vendorId], references: [id])
+  order        ProductOrder? @relation("ProductOrderFraudAlerts", fields: [entityId], references: [id], onDelete: Cascade, map: "FraudAlert_productOrder_fkey")
+  serviceOrder ServiceOrder? @relation("ServiceOrderFraudAlerts", fields: [entityId], references: [id], onDelete: Cascade, map: "FraudAlert_serviceOrder_fkey") // Added
+  payment      Payment?      @relation("PaymentFraudAlerts", fields: [entityId], references: [id], onDelete: Cascade, map: "FraudAlert_payment_fkey")
+
+  @@index([createdAt])
+  @@index([entityId, entityType])
+  @@schema("public")
+}
+
+model EmailTemplate {
+  id          String     @id @default(uuid()) @db.Uuid
+  name        String     @unique @db.VarChar(50)
+  subject     String     @db.VarChar(255)
+  htmlContent String     @db.Text
+  roles       Role[]     @relation("EmailTemplateRoles")
+  eventTypeId String?    @db.Uuid
+  eventType   EventType? @relation("EventTypeToEmailTemplate", fields: [eventTypeId], references: [id])
+  updatedBy   String     @db.Uuid
+  updatedAt   DateTime   @updatedAt
+  user        User       @relation("UserToEmailTemplate", fields: [updatedBy], references: [id])
+  isActive    Boolean    @default(true)
+
+  @@index([name])
+  @@schema("public")
+}
+
+model RolePrivilege {
+  id         String   @id @default(uuid()) @db.Uuid
+  roleId     String   @unique @db.Uuid
+  role       Role     @relation("RoleToPrivileges", fields: [roleId], references: [id])
+  privileges Json
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  @@schema("public")
+}
+
+model CrashReport {
+  id           String           @id @default(uuid()) @db.Uuid
+  appVersion   String           @db.VarChar(50)
+  deviceType   String           @db.VarChar(50)
+  deviceModel  String?          @db.VarChar(100)
+  osVersion    String?          @db.VarChar(50)
+  errorMessage String           @db.Text
+  stackTrace   String           @db.Text
+  userId       String?          @db.Uuid
+  user         User?            @relation("UserCrashReports", fields: [userId], references: [id], onDelete: Cascade)
+  status       CrashStatus      @default(PENDING)
+  reportedAt   DateTime         @default(now())
+  updatedAt    DateTime         @updatedAt
+  resolvedAt   DateTime?
+  deviceId     String?          @db.VarChar(255)
+  installation AppInstallation? @relation("InstallationCrashReports", fields: [deviceId], references: [deviceId])
+  metadata     Json?
+
+  @@index([reportedAt])
+  @@index([userId])
+  @@index([deviceId])
+  @@schema("public")
+}
+
+model AccountDeletionRequest {
+  id                  Int                   @id @default(autoincrement())
+  userId              String                @unique @db.Uuid
+  user                User                  @relation(fields: [userId], references: [id], onDelete: Cascade)
+  reason              String?               @db.Text
+  additionalComments  String?               @db.Text // Added for additional user comments
+  status              AccountDeletionStatus @default(PENDING)
+  requestedAt         DateTime              @default(now())
+  scheduledDeletionAt DateTime? // Added for scheduled deletion date
+  reviewedAt          DateTime?
+  reviewedById        String?               @db.Uuid
+  reviewedBy          User?                 @relation("ReviewedBy", fields: [reviewedById], references: [id])
+  rejectionReason     String?               @db.Text
+  adminNotes          String?               @db.Text // Added for admin notes
+  createdAt           DateTime              @default(now())
+  updatedAt           DateTime              @updatedAt
+
+  @@index([userId])
+  @@index([status])
+  @@index([requestedAt])
+  @@index([reviewedById])
+  @@schema("public")
+}
+
+model AdminSettings {
+  id                   Int      @id @default(autoincrement())
+  defaultServiceCharge Float    @default(0.0)
+  defaultVatRate       Float    @default(0.075)
+  defaultTopupCharge   Float    @default(0.0)
+   defaultPetroleumTaxRate Float? 
+  updatedAt            DateTime @updatedAt
+
+  @@schema("public")
+}
+
+model Appeal {
+  id        String       @id @default(uuid()) @db.Uuid
+  userId    String       @db.Uuid
+  vendorId  String?      @db.Uuid
+  reason    String       @db.Text
+  status    AppealStatus @default(PENDING)
+  createdAt DateTime     @default(now())
+  updatedAt DateTime     @updatedAt
+  user      User         @relation("AppealToUser", fields: [userId], references: [id], onDelete: Cascade)
+  vendor    Profile?     @relation("AppealToVendor", fields: [vendorId], references: [id], onDelete: Cascade)
+
+  @@schema("public")
+}
+
+model WalletSettings {
+  id                          String   @id @default(uuid()) @db.Uuid
+  userId                      String   @unique @db.Uuid
+  walletId                    String?  @unique @db.Uuid
+  wallet                      Wallet?  @relation(fields: [walletId], references: [id])
+  isDeliveryWithdrawalEnabled Boolean  @default(false)
+  withdrawalLimitDaily        Decimal?
+  withdrawalLimitSingle       Decimal?
+  createdAt                   DateTime @default(now())
+  updatedAt                   DateTime @updatedAt
+  user                        User     @relation("UserToWalletSettings", fields: [userId], references: [id])
+
+  @@schema("public")
+}
+
+model BankCard {
+  id               String   @id @default(uuid()) @db.Uuid
+  userId           String   @db.Uuid
+  walletId         String?  @db.Uuid
+  wallet           Wallet?  @relation(fields: [walletId], references: [id])
+  profileId        String?  @db.Uuid
+  profile          Profile? @relation("ProfileToSavedCards", fields: [profileId], references: [id])
+  cardLast4        String
+  cardType         String
+  bankName         String
+  accountNumber    String? // Added for bank-based refunds
+  bankCode         String? // Added for bank-based refunds
+  expiryDate       String
+  isValidated      Boolean  @default(false)
+  flutterwaveToken String?
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+  user             User     @relation("UserToBankCard", fields: [userId], references: [id])
+
+  @@unique([userId, walletId])
+  @@index([profileId])
+  @@schema("public")
+}
+
+model OrderStatusHistory {
+  id             String        @id @default(uuid()) @db.Uuid
+  orderId        String?       @db.Uuid
+  serviceOrderId String?       @db.Uuid
+  entityType     String        @db.VarChar(20)
+  status         String
+  createdAt      DateTime      @default(now())
+  updatedBy      String?       @db.Uuid
+  order          ProductOrder? @relation("ProductOrderStatusHistory", fields: [orderId], references: [id], onDelete: Cascade)
+  user           User?         @relation("UserOrderStatusHistory", fields: [updatedBy], references: [id])
+  notes          String?       @db.Text
+
+  @@index([orderId])
+  @@index([serviceOrderId])
+  @@index([createdAt])
+  @@schema("public")
+}
+
+model WebhookAttempt {
+  id                  String             @id @default(uuid()) @db.Uuid
+  walletTransactionId String?            @db.Uuid
+  eventType           String             @db.VarChar(50)
+  webhookUrl          String             @db.Text
+  payload             Json?
+  status              String?            @db.VarChar
+  attempts            Int                @default(0)
+  lastAttemptAt       DateTime?
+  response            Json?
+  createdAt           DateTime           @default(now())
+  updatedAt           DateTime           @updatedAt
+  walletTransaction   WalletTransaction? @relation("TransactionWebhookAttempts", fields: [walletTransactionId], references: [id])
+
+  @@index([walletTransactionId])
+  @@index([createdAt])
+  @@schema("public")
+}
+
+model EventType {
+  id               String            @id @default(uuid()) @db.Uuid
+  name             String            @unique @db.VarChar(50)
+  description      String?           @db.Text
+  createdBy        String            @db.Uuid
+  createdAt        DateTime          @default(now())
+  updatedAt        DateTime          @updatedAt
+  user             User              @relation(fields: [createdBy], references: [id])
+  emailTemplates   EmailTemplate[]   @relation("EventTypeToEmailTemplate")
+  smsTemplates     SMSTemplate[]     @relation("EventTypeToSMSTemplate")
+  notificationLogs NotificationLog[] @relation("EventTypeToNotificationLog")
+  pushTemplates    PushTemplate[]    @relation("EventTypeToPushTemplate")
+  webhooks         Webhook[]         @relation
+  eventTypeRoles   EventTypeRole[]   @relation 
+
+  @@schema("public")
+}
+
+model SMSTemplate {
+  id          String     @id @default(uuid()) @db.Uuid
+  name        String     @unique @db.VarChar(50)
+  content     String     @db.Text
+  roles       Role[]     @relation("SMSTemplateRoles")
+  eventTypeId String?    @db.Uuid
+  eventType   EventType? @relation("EventTypeToSMSTemplate", fields: [eventTypeId], references: [id])
+  updatedBy   String     @db.Uuid
+  updatedAt   DateTime   @updatedAt
+  user        User       @relation("UserToSMSTemplate", fields: [updatedBy], references: [id])
+  isActive    Boolean    @default(true)
+
+  @@index([name])
+  @@schema("public")
+}
+
+model NotificationLog {
+  id           String    @id @default(uuid()) @db.Uuid
+  userId       String?   @db.Uuid
+  vendorId     String?   @db.Uuid
+  type         String    @db.VarChar(50)
+  eventTypeId  String    @db.Uuid
+  eventType    EventType @relation("EventTypeToNotificationLog", fields: [eventTypeId], references: [id]) // Changed from EventType? to EventType
+  payload      String    @db.Text
+  status       String    @db.VarChar(20)
+  channel      String    @db.VarChar(50) // Changed from String? to String
+  recipient    String?   @db.VarChar(255)
+  errorMessage String?   @db.Text
+  message      String?   @db.Text
+  createdAt    DateTime  @default(now())
+  user         User?     @relation("UserNotificationLogs", fields: [userId], references: [id])
+  vendor       User?     @relation("VendorNotificationLogs", fields: [vendorId], references: [id])
+
+  @@index([createdAt])
+  @@index([userId])
+  @@index([vendorId])
+  @@index([eventTypeId])
+  @@schema("public")
+}
+
+model PushTemplate {
+  id          String     @id @default(uuid()) @db.Uuid
+  name        String     @unique @db.VarChar(50)
+  title       String     @db.VarChar(255)
+  body        String     @db.Text
+  roles       Role[]     @relation("PushTemplateRoles")
+  eventTypeId String?    @db.Uuid
+  eventType   EventType? @relation("EventTypeToPushTemplate", fields: [eventTypeId], references: [id])
+  updatedBy   String     @db.Uuid
+  updatedAt   DateTime   @updatedAt
+  user        User       @relation("UserToPushTemplate", fields: [updatedBy], references: [id])
+  isActive    Boolean    @default(true)
+
+  @@index([name])
+  @@schema("public")
+}
+
+model Webhook {
+  id          String    @id @default(uuid()) @db.Uuid
+  url         String    @db.Text
+  eventTypeId String    @db.Uuid
+  eventType   EventType @relation(fields: [eventTypeId], references: [id])
+  isActive    Boolean   @default(true)
+  roles       Role[]    @relation("WebhookRoles")
+  createdBy   String    @db.Uuid
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  @@schema("public")
+}
+
+model EmailSettings {
+  id                  Int      @id @default(autoincrement())
+  smtpHost            String?  @db.VarChar(255)
+  smtpPort            Int?
+  smtpUser            String?  @db.VarChar(255)
+  smtpPassword        String?  @db.VarChar(255)
+  emailFrom           String?  @db.VarChar(255)
+  enableNotifications Boolean  @default(true) // New: Enable email notifications
+  deliveryTimeStart   String?  @db.VarChar(5) // New: e.g., "06:00"
+  deliveryTimeEnd     String?  @db.VarChar(5) // New: e.g., "18:00"
+  updatedBy           String?  @db.Uuid
+  updatedByUser       User?    @relation(fields: [updatedBy], references: [id], name: "EmailSettingsToUser")
+  updatedAt           DateTime @updatedAt
+  createdAt           DateTime @default(now())
+
+  @@schema("public")
+}
+
+model SMSSettings {
+  id                  Int      @id @default(autoincrement())
+  enableNotifications Boolean  @default(true) // Enable SMS notifications
+  senderId            String?  @db.VarChar(50) // e.g., "Quicrefil"
+  deliveryTimeStart   String?  @db.VarChar(5) // e.g., "06:00" (24-hour format)
+  deliveryTimeEnd     String?  @db.VarChar(5) // e.g., "18:00" (24-hour format)
+  smsProvider         String?  @db.VarChar(100) // e.g., "Twilio", "Nexmo"
+  serviceType         String?  @db.VarChar(50) // e.g., "API", "SMTP-like"
+  user                String?  @db.VarChar(255) // SMS provider username
+  password            String?  @db.VarChar(255) // SMS provider password
+  host                String?  @db.VarChar(255) // SMS provider host (if applicable)
+  port                Int? // SMS provider port (if applicable)
+  updatedBy           String?  @db.Uuid
+  updatedByUser       User?    @relation(fields: [updatedBy], references: [id], name: "SMSSettingsToUser")
+  updatedAt           DateTime @updatedAt
+  createdAt           DateTime @default(now())
+
+  @@schema("public")
+}
+
+model ChurnInsight {
+  id                  String   @id @default(uuid()) @db.Uuid
+  month               String   @db.VarChar(7) // e.g., "2025-01"
+  poorCustomerSupport Decimal  @default(0.00) @db.Decimal(10, 2)
+  highServiceFees     Decimal  @default(0.00) @db.Decimal(10, 2)
+  paymentIssues       Decimal  @default(0.00) @db.Decimal(10, 2)
+  serviceDelays       Decimal  @default(0.00) @db.Decimal(10, 2)
+  other               Decimal  @default(0.00) @db.Decimal(10, 2)
+  createdAt           DateTime @default(now())
+  updatedAt           DateTime @updatedAt
+
+  @@index([month])
+  @@schema("public")
+}
+
+model RewardRule {
+  id             String   @id @default(uuid()) @db.Uuid
+  pointsPerNaira Float    @default(0) // Points earned per Naira spent
+  nairaPerPoint  Float    @default(0.01) // Naira credited per point redeemed (1000 points = 10 Naira)
+  appliesTo      String
+  validFrom      DateTime
+  validUntil     DateTime
+  isActive       Boolean  @default(true)
+  createdById    String   @db.Uuid
+  createdBy      User     @relation(fields: [createdById], references: [id], name: "RewardRuleCreatedBy")
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+  updatedById    String?  @db.Uuid
+  updatedBy      User?    @relation(fields: [updatedById], references: [id], name: "RewardRuleUpdatedBy")
+
+  @@schema("public")
+}
+
+model Reward {
+  id        String    @id @default(uuid()) @db.Uuid
+  userId    String    @db.Uuid
+  user      User      @relation(fields: [userId], references: [id], name: "RewardToUser")
+  points    Int       @default(0)
+  source    String
+  sourceId  String?
+  createdAt DateTime  @default(now())
+  expiresAt DateTime?
+  updatedAt DateTime  @updatedAt // Add this field
+
+
+  @@schema("public")
+}
+
+model EventTypeRole {
+  id          String    @id @default(uuid()) @db.Uuid
+  eventTypeId String    @db.Uuid
+  eventType   EventType @relation(fields: [eventTypeId], references: [id], onDelete: Cascade)
+  roleId      String    @db.Uuid
+  role        Role      @relation(fields: [roleId], references: [id], onDelete: Cascade)
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  @@unique([eventTypeId, roleId])
+  @@index([eventTypeId])
+  @@index([roleId])
+  @@schema("public")
+}

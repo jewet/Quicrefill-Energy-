@@ -1,0 +1,26 @@
+{
+  "compilerOptions": {
+    "target": "ESNext",
+    "module": "node16",
+    "outDir": "./dist",
+    "rootDir": "./src",
+    "strict": true,
+    "esModuleInterop": true,
+    "skipLibCheck": true,
+    "forceConsistentCasingInFileNames": true,
+    "moduleResolution": "node16",
+    "sourceMap": true,
+    "noImplicitAny": true,
+    "strictNullChecks": true,
+    "noUnusedLocals": true,
+    "resolveJsonModule": true,
+    "types": ["node", "redis", "@types/express"],
+    "paths": {
+      "@permissions/*": ["./src/permissions/*"],
+      "@prisma/client": ["./node_modules/@prisma/client"],
+      "@prisma/client/*": ["./node_modules/.prisma/client/*"]
+    }
+  },
+  "include": ["src/**/*", "prisma/**/*", "src/types/**/*", "types/**/*", "src/routes/walletRoutes.ts"],
+  "exclude": ["node_modules", "dist"]
+}

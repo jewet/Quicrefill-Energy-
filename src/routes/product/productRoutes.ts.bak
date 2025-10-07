@@ -1,0 +1,1496 @@
+import { Router } from 'express';
+import { ProductController } from '../../controllers/product/productController';
+import { authenticationMiddleware } from '../../middlewares/authentication';
+import { authorize } from '../../middlewares/permissions';
+import { Role } from '@prisma/client';
+
+const ProductRouter = Router();
+const productController = new ProductController();
+
+/**
+ * @swagger
+ * tags:
+ *   name: Products
+ *   description: Product management endpoints
+ */
+
+// ==== PUBLIC ROUTES ====
+// Static routes (no parameters) must come BEFORE routes with parameters
+
+
+/**
+ * @swagger
+ * /api/customer/products/approved
+ *   get:
+ *     summary: Get all approved products
+ *     tags: [Products]
+ *     parameters:
+ *       - in: query
+ *         name: page
+ *         schema:
+ *           type: integer
+ *           minimum: 1
+ *         description: Page number
+ *       - in: query
+ *         name: limit
+ *         schema:
+ *           type: integer
+ *           minimum: 1
+ *         description: Number of items per page
+ *       - in: query
+ *         name: category
+ *         schema:
+ *           type: string
+ *         description: Filter by category
+ *     responses:
+ *       200:
+ *         description: List of approved products retrieved successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: true
+ *                 message:
+ *                   type: string
+ *                   example: "Products retrieved successfully"
+ *                 data:
+ *                   type: object
+ *                   properties:
+ *                     products:
+ *                       type: array
+ *                       items:
+ *                         type: object
+ *                         properties:
+ *                           name:
+ *                             type: string
+ *                             description: Product name
+ *                           description:
+ *                             type: string
+ *                             description: Product description
+ *                           price:
+ *                             type: number
+ *                             format: float
+ *                             description: Product price
+ *                           salePrice:
+ *                             type: number
+ *                             format: float
+ *                             description: Discounted price (if applicable)
+ *                           status:
+ *                             type: string
+ *                             description: Product approval status
+ *                             enum: [PENDING, APPROVED, REJECTED]
+ *                           featured:
+ *                             type: boolean
+ *                             description: Whether the product is featured
+ *                           category:
+ *                             type: string
+ *                             description: Product category
+ *                           images:
+ *                             type: array
+ *                             items:
+ *                               type: string
+ *                             description: Array of image URLs
+ *                           createdAt:
+ *                             type: string
+ *                             format: date-time
+ *                           updatedAt:
+ *                             type: string
+ *                             format: date-time
+ *                     total:
+ *                       type: integer
+ *                     page:
+ *                       type: integer
+ *                     limit:
+ *                       type: integer
+ *                     pages:
+ *                       type: integer
+ *       500:
+ *         description: Server error
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: false
+ *                 message:
+ *                   type: string
+ *                   example: "Internal server error"
+ */
+ProductRouter.get('/approved', (req, res, next) => productController.getApprovedProducts(req, res, next));
+
+
+/**
+ * @swagger
+ * /api/product/featured:
+ *   get:
+ *     summary: Get featured products
+ *     tags: [Products]
+ *     parameters:
+ *       - in: query
+ *         name: limit
+ *         schema:
+ *           type: integer
+ *         description: Number of featured products to return
+ *     responses:
+ *       200:
+ *         description: List of featured products retrieved successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: true
+ *                 message:
+ *                   type: string
+ *                   example: "Featured products retrieved successfully"
+ *                 data:
+ *                   type: array
+ *                   items:
+ *                     type: object
+ *                     properties:
+ *                       name:
+ *                         type: string
+ *                         description: Product name
+ *                       description:
+ *                         type: string
+ *                         description: Product description
+ *                       price:
+ *                         type: number
+ *                         format: float
+ *                         description: Product price
+ *                       salePrice:
+ *                         type: number
+ *                         format: float
+ *                         description: Discounted price (if applicable)
+ *                       status:
+ *                         type: string
+ *                         description: Product approval status
+ *                         enum: [PENDING, APPROVED, REJECTED]
+ *                       featured:
+ *                         type: boolean
+ *                         description: Whether the product is featured
+ *                       category:
+ *                         type: string
+ *                         description: Product category
+ *                       images:
+ *                         type: array
+ *                         items:
+ *                           type: string
+ *                         description: Array of image URLs
+ *                       createdAt:
+ *                         type: string
+ *                         format: date-time
+ *                       updatedAt:
+ *                         type: string
+ *                         format: date-time
+ *       500:
+ *         description: Server error
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: false
+ *                 message:
+ *                   type: string
+ *                   example: "Internal server error"
+ */
+ProductRouter.get('/featured', (req, res, next) => productController.getFeaturedProducts(req, res, next));
+
+/**
+ * @swagger
+ * /api/product/search:
+ *   get:
+ *     summary: Search for products
+ *     tags: [Products]
+ *     parameters:
+ *       - in: query
+ *         name: q
+ *         schema:
+ *           type: string
+ *         description: Search query
+ *       - in: query
+ *         name: page
+ *         schema:
+ *           type: integer
+ *         description: Page number
+ *       - in: query
+ *         name: limit
+ *         schema:
+ *           type: integer
+ *         description: Items per page
+ *       - in: query
+ *         name: category
+ *         schema:
+ *           type: string
+ *         description: Filter by category
+ *     responses:
+ *       200:
+ *         description: Search results retrieved successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: true
+ *                 message:
+ *                   type: string
+ *                   example: "Search results retrieved successfully"
+ *                 data:
+ *                   type: object
+ *                   properties:
+ *                     products:
+ *                       type: array
+ *                       items:
+ *                         type: object
+ *                         properties:
+ *                           name:
+ *                             type: string
+ *                             description: Product name
+ *                           description:
+ *                             type: string
+ *                             description: Product description
+ *                           price:
+ *                             type: number
+ *                             format: float
+ *                             description: Product price
+ *                           salePrice:
+ *                             type: number
+ *                             format: float
+ *                             description: Discounted price (if applicable)
+ *                           status:
+ *                             type: string
+ *                             description: Product approval status
+ *                             enum: [PENDING, APPROVED, REJECTED]
+ *                           featured:
+ *                             type: boolean
+ *                             description: Whether the product is featured
+ *                           category:
+ *                             type: string
+ *                             description: Product category
+ *                           images:
+ *                             type: array
+ *                             items:
+ *                               type: string
+ *                             description: Array of image URLs
+ *                           createdAt:
+ *                             type: string
+ *                             format: date-time
+ *                           updatedAt:
+ *                             type: string
+ *                             format: date-time
+ *                     total:
+ *                       type: integer
+ *                     page:
+ *                       type: integer
+ *                     limit:
+ *                       type: integer
+ *                     pages:
+ *                       type: integer
+ *       500:
+ *         description: Server error
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: false
+ *                 message:
+ *                   type: string
+ *                   example: "Internal server error"
+ */
+ProductRouter.get('/search', (req, res, next) => productController.searchProducts(req, res, next));
+
+/**
+ * @swagger
+ * /api/product/simple-test:
+ *   get:
+ *     summary: Get simplified product list (testing only)
+ *     tags: [Products]
+ *     responses:
+ *       200:
+ *         description: Simplified list of products retrieved successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: true
+ *                 message:
+ *                   type: string
+ *                   example: "Products retrieved successfully"
+ *                 data:
+ *                   type: array
+ *                   items:
+ *                     type: object
+ *                     properties:
+ *                       name:
+ *                         type: string
+ *                         description: Product name
+ *                       description:
+ *                         type: string
+ *                         description: Product description
+ *                       price:
+ *                         type: number
+ *                         format: float
+ *                         description: Product price
+ *                       salePrice:
+ *                         type: number
+ *                         format: float
+ *                         description: Discounted price (if applicable)
+ *                       status:
+ *                         type: string
+ *                         description: Product approval status
+ *                         enum: [PENDING, APPROVED, REJECTED]
+ *                       featured:
+ *                         type: boolean
+ *                         description: Whether the product is featured
+ *                       category:
+ *                         type: string
+ *                         description: Product category
+ *                       images:
+ *                         type: array
+ *                         items:
+ *                           type: string
+ *                         description: Array of image URLs
+ *                       createdAt:
+ *                         type: string
+ *                         format: date-time
+ *                       updatedAt:
+ *                         type: string
+ *                         format: date-time
+ *       500:
+ *         description: Server error
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: false
+ *                 message:
+ *                   type: string
+ *                   example: "Internal server error"
+ */
+ProductRouter.get('/simple-test', (req, res, next) => productController.getAllProductsSimple(req, res, next));
+
+/**
+ * @swagger
+ * /api/product/cache-test:
+ *   get:
+ *     summary: Test cache functionality
+ *     tags: [Products]
+ *     responses:
+ *       200:
+ *         description: Cache test result
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: true
+ *                 message:
+ *                   type: string
+ *                   example: "Cache is working correctly"
+ *       500:
+ *         description: Cache test failed
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: false
+ *                 message:
+ *                   type: string
+ *                   example: "Cache test failed"
+ */
+ProductRouter.get('/cache-test', async (req, res, next) => {
+  try {
+    const { testCache } = await import('../../utils/cacheUtils');
+    const result = await testCache();
+    res.status(result.success ? 200 : 500).json(result);
+  } catch (error) {
+    res.status(500).json({ 
+      success: false, 
+      message: `Cache test failed: ${error instanceof Error ? error.message : String(error)}` 
+    });
+  }
+});
+
+/**
+ * @swagger
+ * /api/product/{id}:
+ *   get:
+ *     summary: Get product details by ID
+ *     tags: [Products]
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: Product ID
+ *     responses:
+ *       200:
+ *         description: Product retrieved successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: true
+ *                 message:
+ *                   type: string
+ *                   example: "Product retrieved successfully"
+ *                 data:
+ *                   type: object
+ *                   properties:
+ *                     name:
+ *                       type: string
+ *                       description: Product name
+ *                     description:
+ *                       type: string
+ *                       description: Product description
+ *                     price:
+ *                       type: number
+ *                       format: float
+ *                       description: Product price
+ *                     salePrice:
+ *                       type: number
+ *                       format: float
+ *                       description: Discounted price (if applicable)
+ *                     status:
+ *                       type: string
+ *                       description: Product approval status
+ *                       enum: [PENDING, APPROVED, REJECTED]
+ *                     featured:
+ *                       type: boolean
+ *                       description: Whether the product is featured
+ *                     category:
+ *                       type: string
+ *                       description: Product category
+ *                     images:
+ *                       type: array
+ *                       items:
+ *                         type: string
+ *                       description: Array of image URLs
+ *                     createdAt:
+ *                       type: string
+ *                       format: date-time
+ *                     updatedAt:
+ *                       type: string
+ *                       format: date-time
+ *       404:
+ *         description: Product not found
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: false
+ *                 message:
+ *                   type: string
+ *                   example: "Product not found"
+ *       500:
+ *         description: Server error
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: false
+ *                 message:
+ *                   type: string
+ *                   example: "Internal server error"
+ */
+ProductRouter.get('/:id', (req, res, next) => productController.getProductById(req, res, next));
+
+/**
+ * @swagger
+ * /api/product/{id}/similar:
+ *   get:
+ *     summary: Get similar products
+ *     tags: [Products]
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: Product ID
+ *       - in: query
+ *         name: limit
+ *         schema:
+ *           type: integer
+ *         description: Number of similar products to return
+ *     responses:
+ *       200:
+ *         description: Similar products retrieved successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: true
+ *                 message:
+ *                   type: string
+ *                   example: "Similar products retrieved successfully"
+ *                 data:
+ *                   type: array
+ *                   items:
+ *                     type: object
+ *                     properties:
+ *                       name:
+ *                         type: string
+ *                         description: Product name
+ *                       description:
+ *                         type: string
+ *                         description: Product description
+ *                       price:
+ *                         type: number
+ *                         format: float
+ *                         description: Product price
+ *                       salePrice:
+ *                         type: number
+ *                         format: float
+ *                         description: Discounted price (if applicable)
+ *                       status:
+ *                         type: string
+ *                         description: Product approval status
+ *                         enum: [PENDING, APPROVED, REJECTED]
+ *                       featured:
+ *                         type: boolean
+ *                         description: Whether the product is featured
+ *                       category:
+ *                         type: string
+ *                         description: Product category
+ *                       images:
+ *                         type: array
+ *                         items:
+ *                           type: string
+ *                         description: Array of image URLs
+ *                       createdAt:
+ *                         type: string
+ *                         format: date-time
+ *                       updatedAt:
+ *                         type: string
+ *                         format: date-time
+ *       404:
+ *         description: Product not found
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: false
+ *                 message:
+ *                   type: string
+ *                   example: "Product not found"
+ *       500:
+ *         description: Server error
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: false
+ *                 message:
+ *                   type: string
+ *                   example: "Internal server error"
+ */
+ProductRouter.get('/:id/similar', (req, res, next) => productController.getSimilarProducts(req, res, next));
+
+// ==== PROTECTED ROUTES ====
+
+/**
+ * @swagger
+ * /api/products:
+ *   get:
+ *     summary: Get all products (admin only)
+ *     tags: [Products]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: query
+ *         name: page
+ *         schema:
+ *           type: integer
+ *         description: Page number
+ *       - in: query
+ *         name: limit
+ *         schema:
+ *           type: integer
+ *         description: Items per page
+ *       - in: query
+ *         name: status
+ *         schema:
+ *           type: string
+ *           enum: [PENDING, APPROVED, REJECTED]
+ *         description: Filter by status
+ *       - in: query
+ *         name: category
+ *         schema:
+ *           type: string
+ *         description: Filter by category
+ *     responses:
+ *       200:
+ *         description: List of all products retrieved successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: true
+ *                 message:
+ *                   type: string
+ *                   example: "Products retrieved successfully"
+ *                 data:
+ *                   type: object
+ *                   properties:
+ *                     products:
+ *                       type: array
+ *                       items:
+ *                         type: object
+ *                         properties:
+ *                           name:
+ *                             type: string
+ *                             description: Product name
+ *                           description:
+ *                             type: string
+ *                             description: Product description
+ *                           price:
+ *                             type: number
+ *                             format: float
+ *                             description: Product price
+ *                           salePrice:
+ *                             type: number
+ *                             format: float
+ *                             description: Discounted price (if applicable)
+ *                           status:
+ *                             type: string
+ *                             description: Product approval status
+ *                             enum: [PENDING, APPROVED, REJECTED]
+ *                           featured:
+ *                             type: boolean
+ *                             description: Whether the product is featured
+ *                           category:
+ *                             type: string
+ *                             description: Product category
+ *                           images:
+ *                             type: array
+ *                             items:
+ *                               type: string
+ *                             description: Array of image URLs
+ *                           createdAt:
+ *                             type: string
+ *                             format: date-time
+ *                           updatedAt:
+ *                             type: string
+ *                             format: date-time
+ *                     total:
+ *                       type: integer
+ *                     page:
+ *                       type: integer
+ *                     limit:
+ *                       type: integer
+ *                     pages:
+ *                       type: integer
+ *       401:
+ *         description: Unauthorized
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: false
+ *                 message:
+ *                   type: string
+ *                   example: "Unauthorized"
+ *       403:
+ *         description: Forbidden - Admin access required
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: false
+ *                 message:
+ *                   type: string
+ *                   example: "Forbidden - Admin access required"
+ *       500:
+ *         description: Server error
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: false
+ *                 message:
+ *                   type: string
+ *                   example: "Internal server error"
+ */
+ProductRouter.get(
+  '/all',
+  authenticationMiddleware,
+  authorize([Role.ADMIN]),
+  (req, res, next) => productController.getAllProducts(req, res, next)
+);
+
+/**
+ * @swagger
+ * /api/product/vendor/products:
+ *   get:
+ *     summary: Get vendor's own products
+ *     tags: [Products]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: query
+ *         name: page
+ *         schema:
+ *           type: integer
+ *         description: Page number
+ *       - in: query
+ *         name: limit
+ *         schema:
+ *           type: integer
+ *         description: Items per page
+ *       - in: query
+ *         name: status
+ *         schema:
+ *           type: string
+ *           enum: [PENDING, APPROVED, REJECTED]
+ *         description: Filter by status
+ *       - in: query
+ *         name: category
+ *         schema:
+ *           type: string
+ *         description: Filter by category
+ *     responses:
+ *       200:
+ *         description: List of vendor's products retrieved successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: true
+ *                 message:
+ *                   type: string
+ *                   example: "Vendor products retrieved successfully"
+ *                 data:
+ *                   type: object
+ *                   properties:
+ *                     products:
+ *                       type: array
+ *                       items:
+ *                         type: object
+ *                         properties:
+ *                           name:
+ *                             type: string
+ *                             description: Product name
+ *                           description:
+ *                             type: string
+ *                             description: Product description
+ *                           price:
+ *                             type: number
+ *                             format: float
+ *                             description: Product price
+ *                           salePrice:
+ *                             type: number
+ *                             format: float
+ *                             description: Discounted price (if applicable)
+ *                           status:
+ *                             type: string
+ *                             description: Product approval status
+ *                             enum: [PENDING, APPROVED, REJECTED]
+ *                           featured:
+ *                             type: boolean
+ *                             description: Whether the product is featured
+ *                           category:
+ *                             type: string
+ *                             description: Product category
+ *                           images:
+ *                             type: array
+ *                             items:
+ *                               type: string
+ *                             description: Array of image URLs
+ *                           createdAt:
+ *                             type: string
+ *                             format: date-time
+ *                           updatedAt:
+ *                             type: string
+ *                             format: date-time
+ *                     total:
+ *                       type: integer
+ *                     page:
+ *                       type: integer
+ *                     limit:
+ *                       type: integer
+ *                     pages:
+ *                       type: integer
+ *       401:
+ *         description: Unauthorized
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: false
+ *                 message:
+ *                   type: string
+ *                   example: "Unauthorized"
+ *       403:
+ *         description: Forbidden - Vendor access required
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: false
+ *                 message:
+ *                   type: string
+ *                   example: "Forbidden - Vendor access required"
+ *       500:
+ *         description: Server error
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: false
+ *                 message:
+ *                   type: string
+ *                   example: "Internal server error"
+ */
+ProductRouter.get(
+  '/vendor/products',
+  authenticationMiddleware,
+  authorize([Role.VENDOR]),
+  (req, res, next) => productController.getVendorProducts(req, res, next)
+);
+
+/**
+ * @swagger
+ * /api/product:
+ *   post:
+ *     summary: Create a new product
+ *     tags: [Products]
+ *     security:
+ *       - bearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - name
+ *               - description
+ *               - price
+ *               - category
+ *             properties:
+ *               name:
+ *                 type: string
+ *                 example: "Eco-friendly Water Bottle"
+ *               description:
+ *                 type: string
+ *                 example: "Stainless steel reusable water bottle"
+ *               price:
+ *                 type: number
+ *                 example: 24.99
+ *               salePrice:
+ *                 type: number
+ *                 example: 19.99
+ *               category:
+ *                 type: string
+ *                 example: "household"
+ *               featured:
+ *                 type: boolean
+ *                 example: false
+ *               images:
+ *                 type: array
+ *                 items:
+ *                   type: string
+ *                 example: ["image1.jpg", "image2.jpg"]
+ *     responses:
+ *       201:
+ *         description: Product created successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: true
+ *                 message:
+ *                   type: string
+ *                   example: "Product created successfully"
+ *                 data:
+ *                   type: object
+ *                   properties:
+ *                     name:
+ *                       type: string
+ *                       description: Product name
+ *                     description:
+ *                       type: string
+ *                       description: Product description
+ *                     price:
+ *                       type: number
+ *                       format: float
+ *                       description: Product price
+ *                     salePrice:
+ *                       type: number
+ *                       format: float
+ *                       description: Discounted price (if applicable)
+ *                     status:
+ *                       type: string
+ *                       description: Product approval status
+ *                       enum: [PENDING, APPROVED, REJECTED]
+ *                     featured:
+ *                       type: boolean
+ *                       description: Whether the product is featured
+ *                     category:
+ *                       type: string
+ *                       description: Product category
+ *                     images:
+ *                       type: array
+ *                       items:
+ *                         type: string
+ *                       description: Array of image URLs
+ *                     createdAt:
+ *                       type: string
+ *                       format: date-time
+ *                     updatedAt:
+ *                       type: string
+ *                       format: date-time
+ *       400:
+ *         description: Invalid input
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: false
+ *                 message:
+ *                   type: string
+ *                   example: "Invalid input"
+ *       401:
+ *         description: Unauthorized
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: false
+ *                 message:
+ *                   type: string
+ *                   example: "Unauthorized"
+ *       403:
+ *         description: Forbidden - Vendor or Admin access required
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: false
+ *                 message:
+ *                   type: string
+ *                   example: "Forbidden - Vendor or Admin access required"
+ *       500:
+ *         description: Server error
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: false
+ *                 message:
+ *                   type: string
+ *                   example: "Internal server error"
+ */
+ProductRouter.post(
+  '/create',
+  authenticationMiddleware,
+  authorize([Role.DELIVERY_REP, Role.ADMIN, Role.VENDOR]),
+  (req, res, next) => productController.createProduct(req, res, next)
+);
+
+/**
+ * @swagger
+ * /api/product/{id}:
+ *   put:
+ *     summary: Update a product
+ *     tags: [Products]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: Product ID
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - name
+ *               - description
+ *               - price
+ *               - category
+ *             properties:
+ *               name:
+ *                 type: string
+ *                 example: "Eco-friendly Water Bottle"
+ *               description:
+ *                 type: string
+ *                 example: "Stainless steel reusable water bottle"
+ *               price:
+ *                 type: number
+ *                 example: 24.99
+ *               salePrice:
+ *                 type: number
+ *                 example: 19.99
+ *               category:
+ *                 type: string
+ *                 example: "household"
+ *               featured:
+ *                 type: boolean
+ *                 example: false
+ *               images:
+ *                 type: array
+ *                 items:
+ *                   type: string
+ *                 example: ["image1.jpg", "image2.jpg"]
+ *     responses:
+ *       200:
+ *         description: Product updated successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: true
+ *                 message:
+ *                   type: string
+ *                   example: "Product updated successfully"
+ *                 data:
+ *                   type: object
+ *                   properties:
+ *                     name:
+ *                       type: string
+ *                       description: Product name
+ *                     description:
+ *                       type: string
+ *                       description: Product description
+ *                     price:
+ *                       type: number
+ *                       format: float
+ *                       description: Product price
+ *                     salePrice:
+ *                       type: number
+ *                       format: float
+ *                       description: Discounted price (if applicable)
+ *                     status:
+ *                       type: string
+ *                       description: Product approval status
+ *                       enum: [PENDING, APPROVED, REJECTED]
+ *                     featured:
+ *                       type: boolean
+ *                       description: Whether the product is featured
+ *                     category:
+ *                       type: string
+ *                       description: Product category
+ *                     images:
+ *                       type: array
+ *                       items:
+ *                         type: string
+ *                       description: Array of image URLs
+ *                     createdAt:
+ *                       type: string
+ *                       format: date-time
+ *                     updatedAt:
+ *                       type: string
+ *                       format: date-time
+ *       400:
+ *         description: Invalid input
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: false
+ *                 message:
+ *                   type: string
+ *                   example: "Invalid input"
+ *       401:
+ *         description: Unauthorized
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: false
+ *                 message:
+ *                   type: string
+ *                   example: "Unauthorized"
+ *       403:
+ *         description: Forbidden - Not authorized to update this product
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: false
+ *                 message:
+ *                   type: string
+ *                   example: "Forbidden - Not authorized to update this product"
+ *       404:
+ *         description: Product not found
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: false
+ *                 message:
+ *                   type: string
+ *                   example: "Product not found"
+ *       500:
+ *         description: Server error
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: false
+ *                 message:
+ *                   type: string
+ *                   example: "Internal server error"
+ */
+ProductRouter.put(
+  '/:id',
+  authenticationMiddleware,
+  authorize([Role.VENDOR, Role.ADMIN]),
+  (req, res, next) => productController.updateProduct(req, res, next)
+);
+
+/**
+ * @swagger
+ * /api/product/{id}:
+ *   delete:
+ *     summary: Delete a product
+ *     tags: [Products]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: Product ID
+ *     responses:
+ *       200:
+ *         description: Product deleted successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: true
+ *                 message:
+ *                   type: string
+ *                   example: "Product deleted successfully"
+ *       401:
+ *         description: Unauthorized
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: false
+ *                 message:
+ *                   type: string
+ *                   example: "Unauthorized"
+ *       403:
+ *         description: Forbidden - Not authorized to delete this product
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: false
+ *                 message:
+ *                   type: string
+ *                   example: "Forbidden - Not authorized to delete this product"
+ *       404:
+ *         description: Product not found
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: false
+ *                 message:
+ *                   type: string
+ *                   example: "Product not found"
+ *       500:
+ *         description: Server error
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: false
+ *                 message:
+ *                   type: string
+ *                   example: "Internal server error"
+ */
+ProductRouter.delete(
+  '/:id',
+  authenticationMiddleware,
+  authorize([Role.VENDOR, Role.ADMIN]),
+  (req, res, next) => productController.deleteProduct(req, res, next)
+);
+
+/**
+ * @swagger
+ * /api/product/{id}/status:
+ *   patch:
+ *     summary: Update product status (admin only)
+ *     tags: [Products]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: Product ID
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - status
+ *             properties:
+ *               status:
+ *                 type: string
+ *                 enum: [PENDING, APPROVED, REJECTED]
+ *                 example: "APPROVED"
+ *               rejectionReason:
+ *                 type: string
+ *                 example: "Product does not meet our quality standards"
+ *     responses:
+ *       200:
+ *         description: Product status updated successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: true
+ *                 message:
+ *                   type: string
+ *                   example: "Product status updated successfully"
+ *                 data:
+ *                   type: object
+ *                   properties:
+ *                     name:
+ *                       type: string
+ *                       description: Product name
+ *                     description:
+ *                       type: string
+ *                       description: Product description
+ *                     price:
+ *                       type: number
+ *                       format: float
+ *                       description: Product price
+ *                     salePrice:
+ *                       type: number
+ *                       format: float
+ *                       description: Discounted price (if applicable)
+ *                     status:
+ *                       type: string
+ *                       description: Product approval status
+ *                       enum: [PENDING, APPROVED, REJECTED]
+ *                     featured:
+ *                       type: boolean
+ *                       description: Whether the product is featured
+ *                     category:
+ *                       type: string
+ *                       description: Product category
+ *                     images:
+ *                       type: array
+ *                       items:
+ *                         type: string
+ *                       description: Array of image URLs
+ *                     createdAt:
+ *                       type: string
+ *                       format: date-time
+ *                     updatedAt:
+ *                       type: string
+ *                       format: date-time
+ *       400:
+ *         description: Invalid input
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: false
+ *                 message:
+ *                   type: string
+ *                   example: "Invalid input"
+ *       401:
+ *         description: Unauthorized
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: false
+ *                 message:
+ *                   type: string
+ *                   example: "Unauthorized"
+ *       403:
+ *         description: Forbidden - Admin access required
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: false
+ *                 message:
+ *                   type: string
+ *                   example: "Forbidden - Admin access required"
+ *       404:
+ *         description: Product not found
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: false
+ *                 message:
+ *                   type: string
+ *                   example: "Product not found"
+ *       500:
+ *         description: Server error
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: false
+ *                 message:
+ *                   type: string
+ *                   example: "Internal server error"
+ */
+ProductRouter.patch(
+  '/:id/status',
+  authenticationMiddleware,
+  authorize([Role.ADMIN]),
+  (req, res, next) => productController.updateProductStatus(req, res, next)
+);
+
+export default ProductRouter;

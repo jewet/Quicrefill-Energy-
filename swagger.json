@@ -1,0 +1,567 @@
+{
+    "openapi": "3.0.0",
+    "info": {
+      "title": "Quicrefil API",
+      "description": "API for managing fuel delivery, payments, and admin operations",
+      "version": "1.0.0"
+    },
+    "servers": [
+      {
+        "url": "http://localhost:5000",
+        "description": "Local development server"
+      }
+    ],
+    "paths": {
+      "/api/auth/login": {
+        "post": {
+          "summary": "User login",
+          "tags": ["Auth"],
+          "requestBody": {
+            "required": true,
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "email": { "type": "string", "example": "jewettswift@gmail.com" },
+                    "password": { "type": "string", "example": "customer123" }
+                  },
+                  "required": ["email", "password"]
+                }
+              }
+            }
+          },
+          "responses": {
+            "200": {
+              "description": "Login successful",
+              "content": { "application/json": { "schema": { "$ref": "#/components/schemas/AuthResponse" } } }
+            },
+            "401": { "description": "Invalid credentials" },
+            "429": { "description": "Too many login attempts" }
+          }
+        }
+      },
+      "/api/auth/me": {
+        "get": {
+          "summary": "Get current user",
+          "tags": ["Auth"],
+          "security": [{ "bearerAuth": [] }],
+          "responses": {
+            "200": { "description": "User data", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/User" } } } },
+            "401": { "description": "Unauthorized" }
+          }
+        }
+      },
+      "/api/admin/vouchers": {
+        "post": {
+          "summary": "Create a new voucher",
+          "tags": ["Admin"],
+          "security": [{ "bearerAuth": [] }],
+          "requestBody": {
+            "required": true,
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/CreateVoucher" }
+              }
+            }
+          },
+          "responses": {
+            "200": { "description": "Voucher created", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Voucher" } } } },
+            "400": { "description": "Invalid input" },
+            "403": { "description": "Forbidden" }
+          }
+        },
+        "get": {
+          "summary": "List active vouchers",
+          "tags": ["Admin"],
+          "security": [{ "bearerAuth": [] }],
+          "responses": {
+            "200": { "description": "List of vouchers", "content": { "application/json": { "schema": { "type": "array", "items": { "$ref": "#/components/schemas/Voucher" } } } } },
+            "403": { "description": "Forbidden" }
+          }
+        }
+      },
+      "/api/admin/vouchers/{id}": {
+        "patch": {
+          "summary": "Update a voucher",
+          "tags": ["Admin"],
+          "security": [{ "bearerAuth": [] }],
+          "parameters": [
+            { "name": "id", "in": "path", "required": true, "schema": { "type": "integer" } }
+          ],
+          "requestBody": {
+            "content": { "application/json": { "schema": { "$ref": "#/components/schemas/UpdateVoucher" } } }
+          },
+          "responses": {
+            "200": { "description": "Voucher updated", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Voucher" } } } },
+            "400": { "description": "Invalid input" },
+            "403": { "description": "Forbidden" }
+          }
+        },
+        "delete": {
+          "summary": "Delete a voucher",
+          "tags": ["Admin"],
+          "security": [{ "bearerAuth": [] }],
+          "parameters": [
+            { "name": "id", "in": "path", "required": true, "schema": { "type": "integer" } }
+          ],
+          "responses": {
+            "204": { "description": "Voucher deleted" },
+            "403": { "description": "Forbidden" }
+          }
+        }
+      },
+      "/api/admin/users": {
+        "get": {
+          "summary": "List users",
+          "tags": ["Admin"],
+          "security": [{ "bearerAuth": [] }],
+          "parameters": [
+            { "name": "role", "in": "query", "schema": { "type": "string", "enum": ["CUSTOMER", "ADMIN", "VENDOR", "DELIVERY_REP"] } },
+            { "name": "email", "in": "query", "schema": { "type": "string" } }
+          ],
+          "responses": {
+            "200": { "description": "List of users", "content": { "application/json": { "schema": { "type": "array", "items": { "$ref": "#/components/schemas/User" } } } } },
+            "403": { "description": "Forbidden" }
+          }
+        }
+      },
+      "/api/admin/pay-on-delivery": {
+        "patch": {
+          "summary": "Toggle Pay on Delivery",
+          "tags": ["Admin"],
+          "security": [{ "bearerAuth": [] }],
+          "requestBody": {
+            "required": true,
+            "content": { "application/json": { "schema": { "type": "object", "properties": { "isEnabled": { "type": "boolean" } }, "required": ["isEnabled"] } } }
+          },
+          "responses": {
+            "200": { "description": "Setting updated", "content": { "application/json": { "schema": { "type": "object", "properties": { "key": { "type": "string" }, "value": { "type": "string" } } } } } },
+            "400": { "description": "Invalid input" },
+            "403": { "description": "Forbidden" }
+          }
+        }
+      },
+      "/api/diesel/stations": {
+        "get": {
+          "summary": "Get diesel stations",
+          "tags": ["Diesel"],
+          "security": [{ "bearerAuth": [] }],
+          "responses": {
+            "200": { "description": "List of stations", "content": { "application/json": { "schema": { "type": "array", "items": { "$ref": "#/components/schemas/DieselStation" } } } } }
+          }
+        }
+      },
+      "/api/diesel/orders": {
+        "post": {
+          "summary": "Create a diesel order",
+          "tags": ["Diesel"],
+          "security": [{ "bearerAuth": [] }],
+          "requestBody": {
+            "required": true,
+            "content": { "application/json": { "schema": { "$ref": "#/components/schemas/CreateDieselOrder" } } }
+          },
+          "responses": {
+            "200": { "description": "Order created", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/DieselOrder" } } } },
+            "400": { "description": "Invalid input" },
+            "403": { "description": "Pay on Delivery disabled or not eligible" }
+          }
+        }
+      },
+      "/api/diesel/payments": {
+        "post": {
+          "summary": "Process diesel payment",
+          "tags": ["Diesel"],
+          "security": [{ "bearerAuth": [] }],
+          "requestBody": {
+            "required": true,
+            "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ProcessPayment" } } }
+          },
+          "responses": {
+            "200": { "description": "Payment processed", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/PaymentResponse" } } } },
+            "400": { "description": "Invalid input" }
+          }
+        }
+      },
+      "/api/diesel/payments/verify": {
+        "post": {
+          "summary": "Verify diesel payment",
+          "tags": ["Diesel"],
+          "security": [{ "bearerAuth": [] }],
+          "requestBody": {
+            "required": true,
+            "content": { "application/json": { "schema": { "$ref": "#/components/schemas/VerifyPayment" } } }
+          },
+          "responses": {
+            "200": { "description": "Payment verified", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/VerifyPaymentResponse" } } } },
+            "400": { "description": "Invalid input" }
+          }
+        }
+      },
+      "/api/electricity/providers": {
+        "get": {
+          "summary": "Get electricity providers",
+          "tags": ["Electricity"],
+          "security": [{ "bearerAuth": [] }],
+          "responses": {
+            "200": { "description": "List of providers", "content": { "application/json": { "schema": { "type": "array", "items": { "$ref": "#/components/schemas/ElectricityProvider" } } } } }
+          }
+        }
+      },
+      "/api/electricity/orders": {
+        "post": {
+          "summary": "Create an electricity order",
+          "tags": ["Electricity"],
+          "security": [{ "bearerAuth": [] }],
+          "requestBody": {
+            "required": true,
+            "content": { "application/json": { "schema": { "$ref": "#/components/schemas/CreateElectricityOrder" } } }
+          },
+          "responses": {
+            "200": { "description": "Order created", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ElectricityOrder" } } } },
+            "400": { "description": "Invalid input" }
+          }
+        }
+      },
+      "/api/gas/stations": {
+        "get": {
+          "summary": "Get gas stations",
+          "tags": ["Gas"],
+          "security": [{ "bearerAuth": [] }],
+          "responses": {
+            "200": { "description": "List of stations", "content": { "application/json": { "schema": { "type": "array", "items": { "$ref": "#/components/schemas/GasStation" } } } } }
+          }
+        }
+      },
+      "/api/gas/orders": {
+        "post": {
+          "summary": "Create a gas order",
+          "tags": ["Gas"],
+          "security": [{ "bearerAuth": [] }],
+          "requestBody": {
+            "required": true,
+            "content": { "application/json": { "schema": { "$ref": "#/components/schemas/CreateGasOrder" } } }
+          },
+          "responses": {
+            "200": { "description": "Order created", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/GasOrder" } } } },
+            "400": { "description": "Invalid input" },
+            "403": { "description": "Pay on Delivery disabled or not eligible" }
+          }
+        }
+      },
+      "/api/payments/initiate": {
+        "post": {
+          "summary": "Initiate a payment",
+          "tags": ["Payments"],
+          "security": [{ "bearerAuth": [] }],
+          "requestBody": {
+            "required": true,
+            "content": { "application/json": { "schema": { "$ref": "#/components/schemas/InitiatePayment" } } }
+          },
+          "responses": {
+            "200": { "description": "Payment initiated", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/PaymentResponse" } } } },
+            "400": { "description": "Invalid input" }
+          }
+        }
+      },
+      "/api/payments/webhook": {
+        "post": {
+          "summary": "Handle payment webhook",
+          "tags": ["Payments"],
+          "requestBody": {
+            "content": { "application/json": { "schema": { "type": "object", "properties": { "data": { "type": "object" } } } } }
+          },
+          "responses": {
+            "200": { "description": "Webhook processed" }
+          }
+        }
+      },
+      "/api/petrol/stations": {
+        "get": {
+          "summary": "Get petrol stations",
+          "tags": ["Petrol"],
+          "security": [{ "bearerAuth": [] }],
+          "responses": {
+            "200": { "description": "List of stations", "content": { "application/json": { "schema": { "type": "array", "items": { "$ref": "#/components/schemas/PetrolStation" } } } } }
+          }
+        }
+      },
+      "/api/petrol/orders": {
+        "post": {
+          "summary": "Create a petrol order",
+          "tags": ["Petrol"],
+          "security": [{ "bearerAuth": [] }],
+          "requestBody": {
+            "required": true,
+            "content": { "application/json": { "schema": { "$ref": "#/components/schemas/CreatePetrolOrder" } } }
+          },
+          "responses": {
+            "200": { "description": "Order created", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/PetrolOrder" } } } },
+            "400": { "description": "Invalid input" },
+            "403": { "description": "Pay on Delivery disabled or not eligible" }
+          }
+        }
+      },
+      "/api/wallet/balance": {
+        "get": {
+          "summary": "Get wallet balance",
+          "tags": ["Wallet"],
+          "security": [{ "bearerAuth": [] }],
+          "responses": {
+            "200": { "description": "Wallet balance", "content": { "application/json": { "schema": { "type": "number" } } } },
+            "401": { "description": "Unauthorized" }
+          }
+        }
+      },
+      "/api/wallet/deposit": {
+        "post": {
+          "summary": "Deposit funds",
+          "tags": ["Wallet"],
+          "security": [{ "bearerAuth": [] }],
+          "requestBody": {
+            "required": true,
+            "content": { "application/json": { "schema": { "$ref": "#/components/schemas/DepositFunds" } } }
+          },
+          "responses": {
+            "200": { "description": "Funds deposited", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/WalletTransaction" } } } },
+            "400": { "description": "Invalid input" }
+          }
+        }
+      }
+    },
+    "components": {
+      "schemas": {
+        "AuthResponse": {
+          "type": "object",
+          "properties": { "token": { "type": "string" }, "user": { "$ref": "#/components/schemas/User" } }
+        },
+        "User": {
+          "type": "object",
+          "properties": { "id": { "type": "string" }, "email": { "type": "string" }, "role": { "type": "string", "enum": ["CUSTOMER", "ADMIN", "VENDOR", "DELIVERY_REP"] } }
+        },
+        "CreateVoucher": {
+          "type": "object",
+          "properties": {
+            "code": { "type": "string" },
+            "discount": { "type": "number" },
+            "type": { "type": "string", "enum": ["PERCENTAGE", "FIXED"] },
+            "maxUses": { "type": "integer", "nullable": true },
+            "validUntil": { "type": "string", "format": "date" },
+            "appliesTo": { "type": "string", "enum": ["DELIVERY"] }
+          },
+          "required": ["code", "discount", "type", "validUntil", "appliesTo"]
+        },
+        "UpdateVoucher": {
+          "type": "object",
+          "properties": {
+            "isActive": { "type": "boolean" },
+            "discount": { "type": "number" },
+            "validUntil": { "type": "string", "format": "date" }
+          }
+        },
+        "Voucher": {
+          "type": "object",
+          "properties": {
+            "id": { "type": "integer" },
+            "code": { "type": "string" },
+            "discount": { "type": "number" },
+            "type": { "type": "string" },
+            "maxUses": { "type": "integer", "nullable": true },
+            "validUntil": { "type": "string", "format": "date" },
+            "appliesTo": { "type": "string" }
+          }
+        },
+        "DieselStation": {
+          "type": "object",
+          "properties": {
+            "id": { "type": "string" },
+            "name": { "type": "string" },
+            "address": { "type": "string" },
+            "pricePerLiter": { "type": "number" }
+          }
+        },
+        "CreateDieselOrder": {
+          "type": "object",
+          "properties": {
+            "stationId": { "type": "string" },
+            "liters": { "type": "number" },
+            "deliveryAddress": { "type": "string" },
+            "paymentMethod": { "type": "string", "enum": ["Wallet", "Transfer", "Pay on Delivery"] },
+            "voucherCode": { "type": "string", "nullable": true }
+          },
+          "required": ["stationId", "liters", "deliveryAddress", "paymentMethod"]
+        },
+        "DieselOrder": {
+          "type": "object",
+          "properties": {
+            "id": { "type": "string" },
+            "userId": { "type": "string" },
+            "stationId": { "type": "string" },
+            "liters": { "type": "number" },
+            "deliveryAddress": { "type": "string" },
+            "paymentMethod": { "type": "string" },
+            "amountDue": { "type": "number" }
+          }
+        },
+        "ProcessPayment": {
+          "type": "object",
+          "properties": {
+            "orderId": { "type": "string" },
+            "paymentMethod": { "type": "string", "enum": ["Wallet", "Transfer", "Pay on Delivery"] },
+            "voucherCode": { "type": "string", "nullable": true }
+          },
+          "required": ["orderId", "paymentMethod"]
+        },
+        "PaymentResponse": {
+          "type": "object",
+          "properties": {
+            "success": { "type": "boolean" },
+            "redirectUrl": { "type": "string", "nullable": true },
+            "message": { "type": "string", "nullable": true },
+            "paymentDetails": { "type": "object", "nullable": true }
+          }
+        },
+        "VerifyPayment": {
+          "type": "object",
+          "properties": {
+            "orderId": { "type": "string" },
+            "transactionRef": { "type": "string" }
+          },
+          "required": ["orderId", "transactionRef"]
+        },
+        "VerifyPaymentResponse": {
+          "type": "object",
+          "properties": {
+            "success": { "type": "boolean" },
+            "message": { "type": "string" },
+            "redirectUrl": { "type": "string", "nullable": true }
+          }
+        },
+        "ElectricityProvider": {
+          "type": "object",
+          "properties": {
+            "id": { "type": "integer" },
+            "name": { "type": "string" },
+            "flutterwave_biller_code": { "type": "string" }
+          }
+        },
+        "CreateElectricityOrder": {
+          "type": "object",
+          "properties": {
+            "providerId": { "type": "integer" },
+            "meterNumber": { "type": "string" },
+            "paymentAmount": { "type": "number" },
+            "paymentMethod": { "type": "string", "enum": ["Wallet", "Transfer", "Flutterwave"] },
+            "meterType": { "type": "string", "enum": ["prepaid", "postpaid"] }
+          },
+          "required": ["providerId", "meterNumber", "paymentAmount", "paymentMethod"]
+        },
+        "ElectricityOrder": {
+          "type": "object",
+          "properties": {
+            "id": { "type": "string" },
+            "userId": { "type": "string" },
+            "providerId": { "type": "integer" },
+            "meterNumber": { "type": "string" },
+            "paymentAmount": { "type": "number" }
+          }
+        },
+        "GasStation": {
+          "type": "object",
+          "properties": {
+            "id": { "type": "string" },
+            "name": { "type": "string" },
+            "address": { "type": "string" },
+            "price": { "type": "number" }
+          }
+        },
+        "CreateGasOrder": {
+          "type": "object",
+          "properties": {
+            "stationId": { "type": "string" },
+            "sizeId": { "type": "string" },
+            "deliveryAddress": { "type": "string" },
+            "paymentMethod": { "type": "string", "enum": ["Wallet", "Transfer", "Pay on Delivery"] },
+            "voucherCode": { "type": "string", "nullable": true }
+          },
+          "required": ["stationId", "sizeId", "deliveryAddress", "paymentMethod"]
+        },
+        "GasOrder": {
+          "type": "object",
+          "properties": {
+            "id": { "type": "string" },
+            "userId": { "type": "string" },
+            "stationId": { "type": "string" },
+            "sizeId": { "type": "string" },
+            "deliveryAddress": { "type": "string" }
+          }
+        },
+        "InitiatePayment": {
+          "type": "object",
+          "properties": {
+            "amount": { "type": "number" },
+            "paymentMethod": { "type": "string", "enum": ["Flutterwave", "Card", "Transfer", "Wallet", "Pay on Delivery"] },
+            "productType": { "type": "string", "enum": ["gas", "electricity", "diesel", "petrol", "wallet"] },
+            "transactionRef": { "type": "string", "nullable": true }
+          },
+          "required": ["amount", "paymentMethod", "productType"]
+        },
+        "PetrolStation": {
+          "type": "object",
+          "properties": {
+            "id": { "type": "string" },
+            "name": { "type": "string" },
+            "address": { "type": "string" },
+            "pricePerLiter": { "type": "number" }
+          }
+        },
+        "CreatePetrolOrder": {
+          "type": "object",
+          "properties": {
+            "stationId": { "type": "string" },
+            "liters": { "type": "number" },
+            "deliveryAddress": { "type": "string" },
+            "paymentMethod": { "type": "string", "enum": ["Wallet", "Transfer", "Pay on Delivery"] },
+            "voucherCode": { "type": "string", "nullable": true }
+          },
+          "required": ["stationId", "liters", "deliveryAddress", "paymentMethod"]
+        },
+        "PetrolOrder": {
+          "type": "object",
+          "properties": {
+            "id": { "type": "string" },
+            "userId": { "type": "string" },
+            "stationId": { "type": "string" },
+            "liters": { "type": "number" },
+            "deliveryAddress": { "type": "string" }
+          }
+        },
+        "DepositFunds": {
+          "type": "object",
+          "properties": {
+            "amount": { "type": "number" },
+            "petrolOrderId": { "type": "string", "nullable": true },
+            "gasOrderId": { "type": "string", "nullable": true }
+          },
+          "required": ["amount"]
+        },
+        "WalletTransaction": {
+          "type": "object",
+          "properties": {
+            "id": { "type": "integer" },
+            "userId": { "type": "string" },
+            "amount": { "type": "number" },
+            "transactionType": { "type": "string", "enum": ["DEPOSIT", "DEDUCTION", "REFUND"] },
+            "status": { "type": "string", "enum": ["PENDING", "COMPLETED", "FAILED"] }
+          }
+        }
+      },
+      "securitySchemes": {
+        "bearerAuth": {
+          "type": "http",
+          "scheme": "bearer",
+          "bearerFormat": "JWT"
+        }
+      }
+    }
+  }

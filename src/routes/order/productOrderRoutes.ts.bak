@@ -1,0 +1,143 @@
+import express, { Request, Response, NextFunction, RequestHandler } from "express";
+import { ProductOrderController } from '../../controllers/order/ProductOrderController';
+import { authenticationMiddleware, checkPayOnDelivery } from '../../middlewares/authentication';
+import { validateRequest } from '../../middlewares/validateRequest';
+import { authorize } from '../../middlewares/permissions';
+import { Role } from '@prisma/client';
+import { 
+  createOrderSchema, 
+  orderQuerySchema, 
+  updateOrderStatusSchema, 
+  updatePaymentStatusSchema 
+} from '../../schemas/order.schema';
+
+const productOrderRoute = express.Router();
+productOrderRoute.use(authenticationMiddleware);
+const productOrderController = new ProductOrderController();
+
+const asyncHandler = (fn: (req: Request, res: Response, next: NextFunction) => Promise<any>): RequestHandler =>
+  (req, res, next) => {
+    Promise.resolve(fn(req, res, next)).catch(next);
+  };
+
+/**
+ * @route POST /api/products/orders
+ * @desc Create a new order
+ * @access Private
+ */
+productOrderRoute.post(
+  '/create', 
+  validateRequest(createOrderSchema), 
+  asyncHandler(productOrderController.createOrder)
+);
+
+/**
+ * @route POST /api/products/orders/payment
+ * @desc Process payment for an order
+ * @access Private
+ */
+productOrderRoute.post(
+  '/payment',
+  checkPayOnDelivery,
+  asyncHandler(productOrderController.processPayment)
+);
+
+/**
+ * @route POST /api/products/orders/verify-payment
+ * @desc Verify payment for transfer payments
+ * @access Private
+ */
+productOrderRoute.post(
+  '/verify-payment',
+  asyncHandler(productOrderController.verifyPayment)
+);
+
+/**
+ * @route GET /api/products/orders/user
+ * @desc Get user's orders with filtering, sorting, and pagination
+ * @access Private
+ */
+productOrderRoute.get(
+  '/user', 
+  validateRequest(orderQuerySchema, 'query'), 
+  asyncHandler(productOrderController.getUserOrders)
+);
+
+/**
+ * @route GET /api/products/orders/all
+ * @desc Get all orders (admin/vendor only)
+ * @access Private (Admin, Vendor)
+ */
+productOrderRoute.get(
+  '/all',
+  authorize([Role.ADMIN, Role.VENDOR]),
+  validateRequest(orderQuerySchema, 'query'),
+  asyncHandler(productOrderController.getAllOrders)
+);
+
+/**
+ * @route GET /api/products/orders/:id
+ * @desc Get order by ID
+ * @access Private
+ */
+productOrderRoute.get(
+  '/:id',
+  asyncHandler(productOrderController.getOrderById.bind(productOrderController)) // Bind the method to the controller instance
+);
+
+/**
+ * @route PUT /api/products/orders/:id/cancel
+ * @desc Cancel order
+ * @access Private
+ */
+productOrderRoute.put(
+  '/:id/cancel',
+  asyncHandler(productOrderController.cancelOrder)
+);
+
+/**
+ * @route PUT /api/products/orders/:id/status
+ * @desc Update order status (admin, vendor, and delivery agent only)
+ * @access Private (Admin, Vendor, Delivery Agent)
+ */
+productOrderRoute.put(
+  '/:id/status',
+  validateRequest(updateOrderStatusSchema),
+  asyncHandler(productOrderController.updateOrderStatus)
+);
+
+/**
+ * @route PUT /api/products/orders/:id/payment-status
+ * @desc Update payment status (admin only)
+ * @access Private (Admin)
+ */
+productOrderRoute.put(
+  '/:id/payment-status',
+  authorize([Role.ADMIN]),
+  validateRequest(updatePaymentStatusSchema),
+  asyncHandler(productOrderController.updatePaymentStatus)
+);
+
+/**
+ * @route POST /api/products/orders/:id/verify-code
+ * @desc Verify delivery confirmation code
+ * @access Private (Delivery Agent)
+ */
+productOrderRoute.post(
+  '/:id/verify-code',
+  authorize([Role.DELIVERY_AGENT]),
+  asyncHandler(productOrderController.verifyConfirmationCode)
+);
+
+/**
+ * @route PUT /api/products/orders/:id/assign-agent
+ * @desc Assign delivery agent to order (admin and vendor only)
+ * @access Private (Admin, Vendor)
+ */
+productOrderRoute.put(
+  '/:id/assign-agent',
+  authorize([Role.ADMIN, Role.VENDOR]),
+  asyncHandler(productOrderController.assignDeliveryAgent)
+);
+
+export default productOrderRoute;

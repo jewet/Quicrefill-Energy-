@@ -1,0 +1,87 @@
+import express, { Request, Response, NextFunction, Router } from "express";
+import { authenticationMiddleware } from "../middlewares/authentication";
+import walletController from "../controllers/walletController";
+import {
+  topUpRateLimiter,
+  paymentRateLimiter,
+  voucherRateLimiter,
+  billPaymentRateLimiter,
+  webhookRateLimiter,
+} from "../modules/walletModule/middlewareAndValidation";
+import winston from "winston";
+import fs from "fs";
+import path from "path";
+
+// Resolve log directory using environment variable
+const logDir = process.env.LOG_DIR || path.resolve(__dirname, "../../logs");
+if (!fs.existsSync(logDir)) {
+  fs.mkdirSync(logDir, { recursive: true });
+  console.log(`Created log directory: ${logDir}`);
+}
+
+// Initialize logger
+const logger = winston.createLogger({
+  level: process.env.LOG_LEVEL || "info",
+  format: winston.format.combine(
+    winston.format.timestamp(),
+    winston.format.json()
+  ),
+  transports: [
+    new winston.transports.File({
+      filename: path.join(logDir, "customer-error.log"),
+      level: "error",
+    }),
+    new winston.transports.File({
+      filename: path.join(logDir, "customer-combined.log"),
+    }),
+  ],
+});
+
+if (process.env.NODE_ENV !== "production") {
+  logger.add(
+    new winston.transports.Console({
+      format: winston.format.combine(
+        winston.format.colorize(),
+        winston.format.simple()
+      ),
+    })
+  );
+}
+
+// Async handler to catch promise rejections
+const asyncHandler = (
+  fn: (req: Request, res: Response, next: NextFunction) => Promise<void>
+) => (req: Request, res: Response, next: NextFunction): Promise<void> =>
+  Promise.resolve(fn(req, res, next)).catch((error) => {
+    logger.error(`Error in route ${req.originalUrl}: ${error.message}`, {
+      stack: error.stack,
+    });
+    next(error);
+  });
+
+const router: Router = express.Router();
+
+// Wallet endpoints
+router.get("/balance", authenticationMiddleware, asyncHandler(walletController.getBalance.bind(walletController)));
+router.post("/transaction-history", authenticationMiddleware, asyncHandler(walletController.getTransactionHistory.bind(walletController)));
+router.post("/topup", authenticationMiddleware, topUpRateLimiter, asyncHandler(walletController.topUp.bind(walletController)));
+router.post("/pay-with-wallet", authenticationMiddleware, paymentRateLimiter, asyncHandler(walletController.payWithWallet.bind(walletController)));
+router.post("/redeem-voucher", authenticationMiddleware, voucherRateLimiter, asyncHandler(walletController.redeemVoucher.bind(walletController)));
+router.post("/apply-voucher", authenticationMiddleware, voucherRateLimiter, asyncHandler(walletController.applyVoucher.bind(walletController)));
+router.post("/validate-meter", authenticationMiddleware, billPaymentRateLimiter, asyncHandler(walletController.validateMeter.bind(walletController)));
+router.post("/process-bill-payment", authenticationMiddleware, billPaymentRateLimiter, asyncHandler(walletController.processBillPayment.bind(walletController)));
+router.post("/validate-payment", authenticationMiddleware, billPaymentRateLimiter, asyncHandler(walletController.validatePayment.bind(walletController)));
+router.post("/webhook", webhookRateLimiter, asyncHandler(walletController.handleWebhook.bind(walletController)));
+router.post("/flutterwave-webhook", webhookRateLimiter, asyncHandler(walletController.handleFlutterwaveWebhook.bind(walletController)));
+router.get("/flutterwave-callback", asyncHandler(walletController.flutterwaveCallback.bind(walletController)));
+router.post("/create-virtual-account", authenticationMiddleware, topUpRateLimiter, asyncHandler(walletController.createVirtualAccount.bind(walletController)));
+router.post("/virtual-account-payment", authenticationMiddleware, paymentRateLimiter, asyncHandler(walletController.processVirtualAccountPayment.bind(walletController)));
+
+// Voucher-related endpoints
+router.get("/validate-voucher", authenticationMiddleware, voucherRateLimiter, asyncHandler(walletController.validateVoucher.bind(walletController)));
+router.post("/create-voucher", authenticationMiddleware, voucherRateLimiter, asyncHandler(walletController.createVoucher.bind(walletController)));
+router.put("/vouchers/:id", authenticationMiddleware, voucherRateLimiter, asyncHandler(walletController.updateVoucher.bind(walletController)));
+router.get("/vouchers", authenticationMiddleware, asyncHandler(walletController.getAllVouchers.bind(walletController)));
+router.get("/check-voucher-eligibility", authenticationMiddleware, voucherRateLimiter, asyncHandler(walletController.checkVoucherEligibility.bind(walletController)));
+
+export default router as Router;

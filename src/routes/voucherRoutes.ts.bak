@@ -1,0 +1,17 @@
+import express, { Router } from 'express';
+import { authenticationMiddleware } from '../middlewares/authentication';
+import { voucherRateLimiter } from '../modules/walletModule/middlewareAndValidation';
+import { asyncHandler } from '../utils/asyncHandler';
+import walletController from '../controllers/walletController';
+
+const router: Router = express.Router();
+
+// Voucher endpoints
+router.post('/', authenticationMiddleware, voucherRateLimiter, asyncHandler(walletController.createVoucher.bind(walletController)));
+router.post('/validate', authenticationMiddleware, voucherRateLimiter, asyncHandler(walletController.validateVoucher.bind(walletController)));
+router.put('/:id', authenticationMiddleware, voucherRateLimiter, asyncHandler(walletController.updateVoucher.bind(walletController)));
+router.get('/', authenticationMiddleware, asyncHandler(walletController.getAllVouchers.bind(walletController)));
+router.post('/eligibility', authenticationMiddleware, voucherRateLimiter, asyncHandler(walletController.checkVoucherEligibility.bind(walletController)));
+router.get('/customer/:id', authenticationMiddleware, asyncHandler(walletController.getVoucherByCustomerId.bind(walletController)));
+
+export default router;

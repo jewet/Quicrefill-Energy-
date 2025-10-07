@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "503049790499",
+    "project_id": "quicrefill-energy",
+    "storage_bucket": "quicrefill-energy.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:503049790499:android:f36ab24ea0222547197d96",
+        "android_client_info": {
+          "package_name": "Quicrefill.V1"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAdl1y_bpxXP4EER9RoXOq_ISmiUPsX0n4"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

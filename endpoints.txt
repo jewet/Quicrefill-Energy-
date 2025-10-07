@@ -1,0 +1,1631 @@
+POST /api/auth/register
+POST /api/auth/login
+GET /api/auth/me
+POST /api/auth/logout
+POST /api/auth/test-login
+GET /api/auth/admin-test
+POST /api/payments/initiate
+POST /api/payments/webhook
+GET /api/payments/callback
+GET /api/gas/home
+GET /api/gas/stations
+GET /api/gas/vendors/:vendorId
+POST /api/gas/orders
+POST /api/gas/pay
+POST /api/gas/verify
+GET /api/wallet/balance
+POST /api/wallet/deposit
+POST /api/wallet/pay
+POST /api/wallet/refund
+GET /api/wallet/transactions
+POST /api/wallet/topup
+POST /api/wallet/voucher
+POST /api/wallet/apply-voucher
+POST /api/wallet/flutterwave/callback
+GET /api/petrol/home
+GET /api/petrol/stations
+GET /api/petrol/vendors/:vendorId
+POST /api/petrol/orders
+POST /api/petrol/pay
+POST /api/petrol/verify
+GET /api/diesel/home
+GET /api/diesel/stations
+GET /api/diesel/vendors/:vendorId
+POST /api/diesel/orders
+POST /api/diesel/pay
+POST /app/diesel/verify
+GET /api/electricity/home
+GET /api/electricity/providers
+POST /api/electricity/meter-info
+GET /api/electricity/saved-meters
+POST /api/electricity/orders
+POST /api/electricity/pay
+POST /api/electricity/verify
+PATCH /api/electricity/providers/service-fee
+POST /api/admin/vouchers
+PUT /api/admin/vouchers/:id
+DELETE /api/admin/vouchers/:id
+GET /api/admin/vouchers
+GET /api/admin/users
+POST /api/admind/delivery-reps
+PUT /api/admin/permissions
+
+
+
+Base URL Assumption
+base URL is http://localhost:5000 
+1. Auth Controller (Authentication APIs)
+File: Second code block
+Endpoints:
+Register
+Route: POST /api/auth/register
+
+Function: register
+
+Description: Registers a new user
+
+cURL:
+bash
+
+curl -X POST http://localhost:5000/api/auth/register \
+-H "Content-Type: application/json" \
+-d '{"name":"John Doe","email":"john@example.com","password":"password123","role":"CUSTOMER"}'
+
+Login
+Route: POST /api/auth/login
+
+Function: login
+
+Description: Authenticates a user and returns a JWT token
+
+cURL (Your test command):
+bash
+
+curl -X POST http://localhost:5000/api/auth/login \
+-H "Content-Type: application/json" \
+-d '{"email":"jewettswift@gmail.com","password":"customer123"}'
+
+Get Profile
+Route: GET /api/auth/me
+
+Function: getProfile
+
+Description: Returns authenticated user data (requires JWT)
+
+cURL:
+bash
+
+curl -X GET http://localhost:5000/api/auth/me \
+-H "Authorization: Bearer <your-jwt-token>"
+
+Logout
+Route: POST /api/auth/logout
+
+Function: logout
+
+Description: Logs out the user by clearing the JWT cookie
+
+cURL:
+bash
+
+curl -X POST http://localhost:5000/api/auth/logout \
+-H "Authorization: Bearer <your-jwt-token>"
+
+Change Password
+Route: POST /api/auth/change-password
+
+Function: changePassword
+
+Description: Changes the user's password
+
+cURL:
+bash
+
+curl -X POST http://localhost:5000/api/auth/change-password \
+-H "Content-Type: application/json" \
+-H "Authorization: Bearer <your-jwt-token>" \
+-d '{"oldPassword":"customer123","newPassword":"newpass123"}'
+
+2. Admin Controller (Admin APIs)
+File: First code block
+Endpoints:
+Create Voucher
+Route: POST /api/admin/vouchers
+
+Function: createVoucher
+
+Description: Creates a new voucher
+
+cURL:
+bash
+
+curl -X POST http://localhost:5000/api/admin/vouchers \
+-H "Content-Type: application/json" \
+-H "Authorization: Bearer <admin-jwt-token>" \
+-d '{"code":"DISCOUNT10","discount":10,"type":"PERCENTAGE","maxUses":100,"validUntil":"2025-12-31","appliesTo":"DELIVERY"}'
+
+Update Voucher
+Route: PATCH /api/admin/vouchers/:id
+
+Function: updateVoucher
+
+Description: Updates an existing voucher
+
+cURL:
+bash
+
+curl -X PATCH http://localhost:5000/api/admin/vouchers/1 \
+-H "Content-Type: application/json" \
+-H "Authorization: Bearer <admin-jwt-token>" \
+-d '{"isActive":true,"discount":15,"validUntil":"2026-01-01"}'
+
+Delete Voucher
+Route: DELETE /api/admin/vouchers/:id
+
+Function: deleteVoucher
+
+Description: Deletes a voucher
+
+cURL:
+bash
+
+curl -X DELETE http://localhost:5000/api/admin/vouchers/1 \
+-H "Authorization: Bearer <admin-jwt-token>"
+
+List Vouchers
+Route: GET /api/admin/vouchers
+
+Function: listVouchers
+
+Description: Lists all vouchers
+
+cURL:
+bash
+
+curl -X GET http://localhost:5000/api/admin/vouchers \
+-H "Authorization: Bearer <admin-jwt-token>"
+
+List Users
+Route: GET /api/admin/users
+
+Function: listUsers
+
+Description: Lists users with optional filters
+
+cURL:
+bash
+
+curl -X GET "http://localhost:5000/api/admin/users?role=CUSTOMER&email=john@example.com" \
+-H "Authorization: Bearer <admin-jwt-token>"
+
+Manage Delivery Rep
+Route: PATCH /api/admin/delivery-rep
+
+Function: manageDeliveryRep
+
+Description: Manages delivery representative details
+
+cURL:
+bash
+
+curl -X PATCH http://localhost:5000/api/admin/delivery-rep \
+-H "Content-Type: application/json" \
+-H "Authorization: Bearer <admin-jwt-token>" \
+-d '{"userId":"user123","accountBalance":5000,"avgRating":4.5,"credentialsVerified":true}'
+
+Update Permissions
+Route: PATCH /api/admin/permissions
+
+Function: updatePermissions
+
+Description: Updates user permissions
+
+cURL:
+bash
+
+curl -X PATCH http://localhost:5000/api/admin/permissions \
+-H "Content-Type: application/json" \
+-H "Authorization: Bearer <admin-jwt-token>" \
+-d '{"userId":"user123","permissions":{"canManageUsers":true}}'
+
+3. Diesel Controller (Diesel APIs)
+File: Third code block
+Endpoints:
+Get Home Data
+Route: GET /api/diesel/home
+
+Function: getHomeData
+
+Description: Fetches diesel home data
+
+cURL:
+bash
+
+curl -X GET http://localhost:5000/api/diesel/home \
+-H "Authorization: Bearer <your-jwt-token>"
+
+Get Diesel Stations
+Route: GET /api/diesel/stations
+
+Function: getDieselStations
+
+Description: Lists diesel stations
+
+cURL:
+bash
+
+curl -X GET http://localhost:5000/api/diesel/stations \
+-H "Authorization: Bearer <your-jwt-token>"
+
+Get Vendor Details
+Route: GET /api/diesel/vendors/:vendorId
+
+Function: getVendorDetails
+
+Description: Fetches details of a specific vendor
+
+cURL:
+bash
+
+curl -X GET http://localhost:5000/api/diesel/vendors/vendor123 \
+-H "Authorization: Bearer <your-jwt-token>"
+
+Create Diesel Order
+Route: POST /api/diesel/orders
+
+Function: createDieselOrder
+
+Description: Creates a diesel order
+
+cURL:
+bash
+
+curl -X POST http://localhost:5000/api/diesel/orders \
+-H "Content-Type: application/json" \
+-H "Authorization: Bearer <your-jwt-token>" \
+-d '{"stationId":"station123","liters":50,"deliveryAddress":"123 Main St","paymentMethod":"Wallet","voucherCode":"DISCOUNT10"}'
+
+Process Payment
+Route: POST /api/diesel/payments
+
+Function: processPayment
+
+Description: Processes payment for a diesel order
+
+cURL:
+bash
+
+curl -X POST http://localhost:5000/api/diesel/payments \
+-H "Content-Type: application/json" \
+-H "Authorization: Bearer <your-jwt-token>" \
+-d '{"orderId":"order123","paymentMethod":"Wallet","voucherCode":"DISCOUNT10"}'
+
+Verify Payment
+Route: POST /api/diesel/payments/verify
+
+Function: verifyPayment
+
+Description: Verifies payment for a diesel order
+
+cURL:
+bash
+
+curl -X POST http://localhost:5000/api/diesel/payments/verify \
+-H "Content-Type: application/json" \
+-H "Authorization: Bearer <your-jwt-token>" \
+-d '{"orderId":"order123","transactionRef":"tx123"}'
+
+4. Electricity Controller (Electricity APIs)
+File: Fourth code block
+Endpoints:
+Get Home Data
+Route: GET /api/electricity/home
+
+Function: getHomeData
+
+Description: Fetches electricity home data
+
+cURL:
+bash
+
+curl -X GET http://localhost:5000/api/electricity/home \
+-H "Authorization: Bearer <your-jwt-token>"
+
+Get Providers
+Route: GET /api/electricity/providers
+
+Function: getProviders
+
+Description: Lists electricity providers
+
+cURL:
+bash
+
+curl -X GET http://localhost:5000/api/electricity/providers \
+-H "Authorization: Bearer <your-jwt-token>"
+
+Get Meter Info
+Route: POST /api/electricity/meter-info
+
+Function: getMeterInfo
+
+Description: Fetches meter information
+
+cURL:
+bash
+
+curl -X POST http://localhost:5000/api/electricity/meter-info \
+-H "Content-Type: application/json" \
+-H "Authorization: Bearer <your-jwt-token>" \
+-d '{"billerCode":"biller123","meterNumber":"123456789012"}'
+
+Get Saved Meter Numbers
+Route: GET /api/electricity/saved-meters
+
+Function: getSavedMeterNumbers
+
+Description: Lists saved meter numbers
+
+cURL:
+bash
+
+curl -X GET http://localhost:5000/api/electricity/saved-meters \
+-H "Authorization: Bearer <your-jwt-token>"
+
+Create Order
+Route: POST /api/electricity/orders
+
+Function: createOrder
+
+Description: Creates an electricity order
+
+cURL:
+bash
+
+curl -X POST http://localhost:5000/api/electricity/orders \
+-H "Content-Type: application/json" \
+-H "Authorization: Bearer <your-jwt-token>" \
+-d '{"providerId":"provider123","meterNumber":"123456789012","paymentAmount":1000,"paymentMethod":"Wallet","meterType":"prepaid"}'
+
+Process Payment
+Route: POST /api/electricity/payments
+
+Function: processPayment
+
+Description: Processes payment for an electricity order
+
+cURL:
+bash
+
+curl -X POST http://localhost:5000/api/electricity/payments \
+-H "Content-Type: application/json" \
+-H "Authorization: Bearer <your-jwt-token>" \
+-d '{"orderId":"order123","paymentMethod":"Wallet","paymentJwt":"jwt-token"}'
+
+Verify Payment
+Route: POST /api/electricity/payments/verify
+
+Function: verifyPayment
+
+Description: Verifies payment for an electricity order
+
+cURL:
+bash
+
+curl -X POST http://localhost:5000/api/electricity/payments/verify \
+-H "Content-Type: application/json" \
+-H "Authorization: Bearer <your-jwt-token>" \
+-d '{"orderId":"order123","transactionRef":"tx123"}'
+
+Update Provider Service Fee
+Route: PATCH /api/electricity/providers/service-fee
+
+Function: updateProviderServiceFee
+
+Description: Updates service fee for a provider (Admin only)
+
+cURL:
+bash
+
+curl -X PATCH http://localhost:5000/api/electricity/providers/service-fee \
+-H "Content-Type: application/json" \
+-H "Authorization: Bearer <admin-jwt-token>" \
+-d '{"providerId":"provider123","serviceFee":50}'
+
+5. Gas Controller (Gas APIs)
+File: Fifth code block
+Endpoints:
+Get Home Data
+Route: GET /api/gas/home
+
+Function: getHomeData
+
+Description: Fetches gas home data
+
+cURL:
+bash
+
+curl -X GET http://localhost:5000/api/gas/home \
+-H "Authorization: Bearer <your-jwt-token>"
+
+Get Gas Stations
+Route: GET /api/gas/stations
+
+Function: getGasStations
+
+Description: Lists gas stations
+
+cURL:
+bash
+
+curl -X GET http://localhost:5000/api/gas/stations \
+-H "Authorization: Bearer <your-jwt-token>"
+
+Get Vendor Details
+Route: GET /api/gas/vendors/:vendorId
+
+Function: getVendorDetails
+
+Description: Fetches details of a specific vendor
+
+cURL:
+bash
+
+curl -X GET http://localhost:5000/api/gas/vendors/vendor123 \
+-H "Authorization: Bearer <your-jwt-token>"
+
+Create Gas Order
+Route: POST /api/gas/orders
+
+Function: createGasOrder
+
+Description: Creates a gas order
+
+cURL:
+bash
+
+curl -X POST http://localhost:5000/api/gas/orders \
+-H "Content-Type: application/json" \
+-H "Authorization: Bearer <your-jwt-token>" \
+-d '{"stationId":"station123","sizeId":"size123","deliveryAddress":"123 Main St","paymentMethod":"Wallet","voucherCode":"DISCOUNT10"}'
+
+Process Payment
+Route: POST /api/gas/payments
+
+Function: processPayment
+
+Description: Processes payment for a gas order
+
+cURL:
+bash
+
+curl -X POST http://localhost:5000/api/gas/payments \
+-H "Content-Type: application/json" \
+-H "Authorization: Bearer <your-jwt-token>" \
+-d '{"orderId":"order123","paymentMethod":"Wallet","voucherCode":"DISCOUNT10"}'
+
+Verify Payment
+Route: POST /api/gas/payments/verify
+
+Function: verifyPayment
+
+Description: Verifies payment for a gas order
+
+cURL:
+bash
+
+curl -X POST http://localhost:5000/api/gas/payments/verify \
+-H "Content-Type: application/json" \
+-H "Authorization: Bearer <your-jwt-token>" \
+-d '{"orderId":"order123","transactionRef":"tx123"}'
+
+6. Payment Controller (Payment APIs)
+File: Sixth code block
+Endpoints:
+Initiate Payment
+Route: POST /api/payments/initiate
+
+Function: initiatePayment
+
+Description: Initiates a payment
+
+cURL:
+bash
+
+curl -X POST http://localhost:5000/api/payments/initiate \
+-H "Content-Type: application/json" \
+-H "Authorization: Bearer <your-jwt-token>" \
+-d '{"amount":1000,"paymentMethod":"Flutterwave","productType":"diesel","transactionRef":"tx123"}'
+
+Handle Webhook
+Route: POST /api/payments/webhook
+
+Function: handleWebhook
+
+Description: Handles payment provider webhook
+
+cURL (Typically called by payment provider):
+bash
+
+curl -X POST http://localhost:5000/api/payments/webhook \
+-H "Content-Type: application/json" \
+-d '{"transaction_id":"tx123","status":"success"}'
+
+Handle Callback
+Route: GET /api/payments/callback
+
+Function: handleCallback
+
+Description: Handles payment callback redirect
+
+cURL (For testing):
+bash
+
+curl -X GET "http://localhost:5000/api/payments/callback?transaction_id=tx123&status=success"
+
+7. Petrol Controller (Petrol APIs)
+File: Seventh code block
+Endpoints:
+Get Home Data
+Route: GET /api/petrol/home
+
+Function: getHomeData
+
+Description: Fetches petrol home data
+
+cURL:
+bash
+
+curl -X GET http://localhost:5000/api/petrol/home \
+-H "Authorization: Bearer <your-jwt-token>"
+
+Get Petrol Stations
+Route: GET /api/petrol/stations
+
+Function: getPetrolStations
+
+Description: Lists petrol stations
+
+cURL:
+bash
+
+curl -X GET http://localhost:5000/api/petrol/stations \
+-H "Authorization: Bearer <your-jwt-token>"
+
+Get Vendor Details
+Route: GET /api/petrol/vendors/:vendorId
+
+Function: getVendorDetails
+
+Description: Fetches details of a specific vendor
+
+cURL:
+bash
+
+curl -X GET http://localhost:5000/api/petrol/vendors/vendor123 \
+-H "Authorization: Bearer <your-jwt-token>"
+
+Create Petrol Order
+Route: POST /api/petrol/orders
+
+Function: createPetrolOrder
+
+Description: Creates a petrol order
+
+cURL:
+bash
+
+curl -X POST http://localhost:5000/api/petrol/orders \
+-H "Content-Type: application/json" \
+-H "Authorization: Bearer <your-jwt-token>" \
+-d '{"stationId":"station123","liters":50,"deliveryAddress":"123 Main St","paymentMethod":"Wallet","voucherCode":"DISCOUNT10"}'
+
+Process Payment
+Route: POST /api/petrol/payments
+
+Function: processPayment
+
+Description: Processes payment for a petrol order
+
+cURL:
+bash
+
+curl -X POST http://localhost:5000/api/petrol/payments \
+-H "Content-Type: application/json" \
+-H "Authorization: Bearer <your-jwt-token>" \
+-d '{"orderId":"order123","paymentMethod":"Wallet","voucherCode":"DISCOUNT10"}'
+
+Verify Payment
+Route: POST /api/petrol/payments/verify
+
+Function: verifyPayment
+
+Description: Verifies payment for a petrol order
+
+cURL:
+bash
+
+curl -X POST http://localhost:5000/api/petrol/payments/verify \
+-H "Content-Type: application/json" \
+-H "Authorization: Bearer <your-jwt-token>" \
+-d '{"orderId":"order123","transactionRef":"tx123"}'
+
+8. Wallet Controller (Wallet APIs)
+File: Eighth code block
+Endpoints:
+Get Balance
+Route: GET /api/wallet/balance
+
+Function: getBalance
+
+Description: Retrieves wallet balance
+
+cURL:
+bash
+
+curl -X GET http://localhost:5000/api/wallet/balance \
+-H "Authorization: Bearer <your-jwt-token>"
+
+Deposit
+Route: POST /api/wallet/deposit
+
+Function: deposit
+
+Description: Deposits funds into wallet
+
+cURL:
+bash
+
+curl -X POST http://localhost:5000/api/wallet/deposit \
+-H "Content-Type: application/json" \
+-H "Authorization: Bearer <your-jwt-token>" \
+-d '{"amount":1000,"petrolOrderId":"order123"}'
+
+Pay With Wallet
+Route: POST /api/wallet/pay
+
+Function: payWithWallet
+
+Description: Pays for an order using wallet
+
+cURL:
+bash
+
+curl -X POST http://localhost:5000/api/wallet/pay \
+-H "Content-Type: application/json" \
+-H "Authorization: Bearer <your-jwt-token>" \
+-d '{"amount":1000,"orderId":"order123","orderType":"diesel","serviceCharge":100,"vatRate":0.075,"voucherCode":"DISCOUNT10"}'
+
+Refund Funds
+Route: POST /api/wallet/refund
+
+Function: refundFunds
+
+Description: Refunds funds to wallet
+
+cURL:
+bash
+
+curl -X POST http://localhost:5000/api/wallet/refund \
+-H "Content-Type: application/json" \
+-H "Authorization: Bearer <your-jwt-token>" \
+-d '{"amount":1000,"orderId":"order123","orderType":"diesel"}'
+
+Get Transactions
+Route: GET /api/wallet/transactions
+
+Function: getTransactions
+
+Description: Retrieves transaction history
+
+cURL:
+bash
+
+curl -X GET http://localhost:5000/api/wallet/transactions \
+-H "Authorization: Bearer <your-jwt-token>"
+
+Top Up
+Route: POST /api/wallet/topup
+
+Function: topUp
+
+Description: Tops up wallet balance
+
+cURL:
+bash
+
+curl -X POST http://localhost:5000/api/wallet/topup \
+-H "Content-Type: application/json" \
+-H "Authorization: Bearer <your-jwt-token>" \
+-d '{"amount":1000,"paymentMethod":"flutterwave","transactionReference":"tx123"}'
+
+Redeem Voucher
+Route: POST /api/wallet/voucher/redeem
+
+Function: redeemVoucher
+
+Description: Redeems a voucher
+
+cURL:
+bash
+
+curl -X POST http://localhost:5000/api/wallet/voucher/redeem \
+-H "Content-Type: application/json" \
+-H "Authorization: Bearer <your-jwt-token>" \
+-d '{"voucherCode":"DISCOUNT10"}'
+
+Validate Meter
+Route: POST /api/wallet/meter/validate
+
+Function: validateMeter
+
+Description: Validates an electricity meter number
+
+cURL:
+bash
+
+curl -X POST http://localhost:5000/api/wallet/meter/validate \
+-H "Content-Type: application/json" \
+-H "Authorization: Bearer <your-jwt-token>" \
+-d '{"meterNumber":"123456789012","providerId":1}'
+
+Flutterwave Callback
+Route: POST /api/wallet/flutterwave-callback
+
+Function: flutterwaveCallback
+
+Description: Handles Flutterwave payment callback
+
+cURL (Typically called by Flutterwave):
+bash
+
+curl -X POST http://localhost:5000/api/wallet/flutterwave-callback \
+-H "Content-Type: application/json" \
+-H "x-flutterwave-signature: <signature>" \
+-d '{"transactionId":"tx123","status":"success"}'
+
+Apply Voucher
+Route: POST /api/wallet/voucher/apply
+
+Function: applyVoucher
+
+Description: Applies a voucher to an order
+
+cURL:
+bash
+
+curl -X POST http://localhost:5000/api/wallet/voucher/apply \
+-H "Content-Type: application/json" \
+-H "Authorization: Bearer <your-jwt-token>" \
+-d '{"voucherCode":"DISCOUNT10","orderType":"diesel"}'
+
+Notes 
+Authentication: Most endpoints require a JWT token in the Authorization header as Bearer <token>. Obtain this token from the /api/auth/login endpoint.
+
+Error Handling: Responses typically include an error field in JSON when something goes wrong.
+
+HTTP Methods: Match the cURL method (-X POST, -X GET, etc.) to the endpoint's method (POST, GET, PATCH, DELETE).
+
+Route Parameters: Replace placeholders like :id or :vendorId with actual values.
+
+Payload: Ensure JSON payloads match the expected structure in the controller functions.
+
+
+
+Base URL 
+http://localhost:5000 as the base URL.
+1. authMiddleware (Authentication Middleware)
+File: middlewares/authMiddleware.ts
+
+Purpose: Validates JWT tokens from either the Authorization header or cookies, attaches the decoded user to req.user, and checks for blacklisted or expired tokens.
+
+Usage: Applied to most private routes (e.g., /api/auth/me, /api/wallet/balance).
+
+cURL Example (Testing with /api/auth/me):
+bash
+
+curl -X GET http://localhost:5000/api/auth/me \
+-H "Authorization: Bearer <your-jwt-token>"
+
+Success: Returns user data if token is valid.
+
+Failure (No Token):
+bash
+
+curl -X GET http://localhost:5000/api/auth/me
+
+Response: {"error": "Unauthorized - No token provided"}
+
+Failure (Invalid Token):
+bash
+
+curl -X GET http://localhost:5000/api/auth/me \
+-H "Authorization: Bearer invalid-token"
+
+Response: {"error": "Unauthorized - Invalid token: ..."}
+
+2. authorizeRoles (Role-Based Authorization Middleware)
+File: middlewares/authMiddleware.ts
+
+Purpose: Restricts access to specific roles (e.g., ADMIN, CUSTOMER).
+
+Usage: Used in controllers like AdminController (e.g., /api/admin/vouchers).
+
+cURL Example (Testing with /api/admin/vouchers):
+bash
+
+curl -X POST http://localhost:5000/api/admin/vouchers \
+-H "Content-Type: application/json" \
+-H "Authorization: Bearer <admin-jwt-token>" \
+-d '{"code":"DISCOUNT10","discount":10,"type":"PERCENTAGE","maxUses":100,"validUntil":"2025-12-31","appliesTo":"DELIVERY"}'
+
+Success: Creates a voucher if user has ADMIN role.
+
+Failure (Non-Admin Token):
+bash
+
+curl -X POST http://localhost:5000/api/admin/vouchers \
+-H "Content-Type: application/json" \
+-H "Authorization: Bearer <customer-jwt-token>" \
+-d '{"code":"DISCOUNT10","discount":10,"type":"PERCENTAGE","maxUses":100,"validUntil":"2025-12-31","appliesTo":"DELIVERY"}'
+
+Response: {"error": "Forbidden - Insufficient permissions"}
+
+3. loginRateLimiter (Rate Limiter for Login)
+File: middlewares/authMiddleware.ts
+
+Purpose: Limits login attempts to 5 per 15 minutes per IP to prevent brute-force attacks.
+
+Usage: Applied to /api/auth/login.
+
+cURL Example (Testing /api/auth/login):
+bash
+
+curl -X POST http://localhost:5000/api/auth/login \
+-H "Content-Type: application/json" \
+-d '{"email":"jewettswift@gmail.com","password":"customer123"}'
+
+Success: Logs in if under limit.
+
+Failure (After 5 Attempts): Repeat the above command 6+ times from the same IP within 15 minutes.
+Response: {"error": "Too many login attempts. Please try again later."}
+
+4. checkPayOnDelivery (Pay on Delivery Eligibility Check)
+File: middlewares/authMiddleware.ts
+
+Purpose: Checks if a user is eligible for "Pay on Delivery" based on order history (new customers ineligible).
+
+Usage: Could be applied to order creation endpoints (e.g., /api/diesel/orders).
+
+cURL Example (Testing with /api/diesel/orders):
+bash
+
+curl -X POST http://localhost:5000/api/diesel/orders \
+-H "Content-Type: application/json" \
+-H "Authorization: Bearer <your-jwt-token>" \
+-d '{"stationId":"station123","liters":50,"deliveryAddress":"123 Main St","paymentMethod":"Pay on Delivery","voucherCode":"DISCOUNT10"}'
+
+Success: Proceeds if user has prior completed orders.
+
+Failure (New Customer):
+Response: {"error": "Pay on delivery not available for new customers"}
+
+5. validatePaymentRequest (Payment Request Validation)
+File: middlewares/authMiddleware.ts
+
+Purpose: Validates payment request data (amount, payment method, transaction reference).
+
+Usage: Applied to payment endpoints (e.g., /api/payments/initiate).
+
+cURL Example (Testing with /api/payments/initiate):
+bash
+
+curl -X POST http://localhost:5000/api/payments/initiate \
+-H "Content-Type: application/json" \
+-H "Authorization: Bearer <your-jwt-token>" \
+-d '{"amount":1000,"paymentMethod":"Wallet","productType":"diesel","transactionRef":"tx123"}'
+
+Success: Proceeds if data is valid.
+
+Failure (Invalid Amount):
+bash
+
+curl -X POST http://localhost:5000/api/payments/initiate \
+-H "Content-Type: application/json" \
+-H "Authorization: Bearer <your-jwt-token>" \
+-d '{"amount":-100,"paymentMethod":"Wallet","productType":"diesel"}'
+
+Response: {"error": "Invalid payment amount. Must be a positive number."}
+
+Failure (Invalid Method):
+bash
+
+curl -X POST http://localhost:5000/api/payments/initiate \
+-H "Content-Type: application/json" \
+-H "Authorization: Bearer <your-jwt-token>" \
+-d '{"amount":1000,"paymentMethod":"Invalid","productType":"diesel"}'
+
+Response: {"error": "Invalid payment method. Must be one of: Card, Transfer, Wallet, Pay on Delivery."}
+
+6. checkPayOnDeliveryEligibility (Diesel-Specific Eligibility Check)
+File: Second middleware file
+
+Purpose: Checks "Pay on Delivery" eligibility based on completed diesel orders.
+
+Usage: Applied to /api/diesel/orders or /api/diesel/payments.
+
+cURL Example (Testing with /api/diesel/orders):
+bash
+
+curl -X POST http://localhost:5000/api/diesel/orders \
+-H "Content-Type: application/json" \
+-H "Authorization: Bearer <your-jwt-token>" \
+-d '{"stationId":"station123","liters":50,"deliveryAddress":"123 Main St","paymentMethod":"Pay on Delivery"}'
+
+Success: Sets req.isNewCustomer = false if user has completed orders.
+
+Failure: Proceeds with req.isNewCustomer = true if no completed orders, potentially blocking in subsequent logic.
+
+7. errorHandler (Error Handling Middleware)
+File: Third middleware file
+
+Purpose: Catches and logs errors, returns standardized error responses.
+
+Usage: Applied globally to all routes.
+
+cURL Example (Triggering an error, e.g., invalid token with /api/auth/me):
+bash
+
+curl -X GET http://localhost:5000/api/auth/me \
+-H "Authorization: Bearer invalid-token"
+
+Response: {"error": "Unauthorized - Invalid token: ..."}
+
+Log: Error logged to logs/error.log.
+
+8. checkPayOnDeliveryEligibility (Gas-Specific Eligibility Check)
+File: Fourth middleware file
+
+Purpose: Checks "Pay on Delivery" eligibility based on completed gas orders.
+
+Usage: Applied to /api/gas/orders or /api/gas/payments.
+
+cURL Example (Testing with /api/gas/orders):
+bash
+
+curl -X POST http://localhost:5000/api/gas/orders \
+-H "Content-Type: application/json" \
+-H "Authorization: Bearer <your-jwt-token>" \
+-d '{"stationId":"station123","sizeId":"size123","deliveryAddress":"123 Main St","paymentMethod":"Pay on Delivery"}'
+
+Success: Sets req.isNewCustomer = false if user has completed gas orders.
+
+Failure: Sets req.isNewCustomer = true if no completed orders.
+
+9. checkPayOnDeliveryEligibility (Petrol-Specific Eligibility Check)
+File: Fifth middleware file
+
+Purpose: Checks "Pay on Delivery" eligibility based on completed petrol orders.
+
+Usage: Applied to /api/petrol/orders or /api/petrol/payments.
+
+cURL Example (Testing with /api/petrol/orders):
+bash
+
+curl -X POST http://localhost:5000/api/petrol/orders \
+-H "Content-Type: application/json" \
+-H "Authorization: Bearer <your-jwt-token>" \
+-d '{"stationId":"station123","liters":50,"deliveryAddress":"123 Main St","paymentMethod":"Pay on Delivery"}'
+
+Success: Sets req.isNewCustomer = false if user has completed petrol orders.
+
+Failure: Sets req.isNewCustomer = true if no completed orders.
+
+10. limiter (Global Rate Limiter)
+File: Sixth middleware file
+
+Purpose: Limits all API requests to 100 per 15 minutes per IP.
+
+Usage: Applied globally to all routes.
+
+cURL Example (Testing with /api/auth/me):
+bash
+
+curl -X GET http://localhost:5000/api/auth/me \
+-H "Authorization: Bearer <your-jwt-token>"
+
+Failure (After 100 Requests): Repeat 101+ times within 15 minutes.
+Response: "Too many requests from this IP, please try again later."
+
+11. loginLimiter (Login-Specific Rate Limiter)
+File: Sixth middleware file
+
+Purpose: Limits login attempts to 5 per 5 minutes per IP.
+
+Usage: Alternative to loginRateLimiter, applied to /api/auth/login.
+
+cURL Example (Testing /api/auth/login):
+bash
+
+curl -X POST http://localhost:5000/api/auth/login \
+-H "Content-Type: application/json" \
+-d '{"email":"jewettswift@gmail.com","password":"customer123"}'
+
+Failure (After 5 Attempts): Repeat 6+ times within 5 minutes.
+Response: {"error": "Too many login attempts. Try again later."}
+
+Notes 
+Authentication: Ensure JWT tokens are sent in the Authorization header (Bearer <token>) or as a cookie (token=<token>). Use /api/auth/login to obtain tokens.
+
+Rate Limiting: Respect rate limits (5 logins/5 mins, 100 requests/15 mins). Handle 429 responses gracefully.
+
+Role-Based Access: Check user roles (CUSTOMER, ADMIN, etc.) and expect 403 errors for unauthorized roles.
+
+Pay on Delivery: For endpoints like /api/diesel/orders, include logic to handle Pay on Delivery restrictions for new customers.
+
+Error Handling: Use the error field in responses for user feedback and log errors client-side if needed.
+
+Testing: Replace <your-jwt-token> with a valid token from /api/auth/login. Use tools like Postman to automate repeated requests for rate limit testing.
+
+
+
+
+
+
+Base URL Assumption
+http://localhost:5000 as the base URL.
+
+
+1. Admin Service (AdminService)
+File: First code block
+Mapped Endpoints (from Admin Controller):
+Create Voucher
+Route: POST /api/admin/vouchers
+
+Service Method: createVoucher
+
+cURL:
+bash
+
+curl -X POST http://localhost:5000/api/admin/vouchers \
+-H "Content-Type: application/json" \
+-H "Authorization: Bearer <admin-jwt-token>" \
+-d '{"code":"DISCOUNT10","discount":10,"type":"PERCENTAGE","maxUses":100,"validUntil":"2025-12-31","appliesTo":"DELIVERY"}'
+
+Update Voucher
+Route: PATCH /api/admin/vouchers/:id
+
+Service Method: updateVoucher
+
+cURL:
+bash
+
+curl -X PATCH http://localhost:5000/api/admin/vouchers/1 \
+-H "Content-Type: application/json" \
+-H "Authorization: Bearer <admin-jwt-token>" \
+-d '{"isActive":true,"discount":15,"validUntil":"2026-01-01"}'
+
+Delete Voucher
+Route: DELETE /api/admin/vouchers/:id
+
+Service Method: deleteVoucher
+
+cURL:
+bash
+
+curl -X DELETE http://localhost:5000/api/admin/vouchers/1 \
+-H "Authorization: Bearer <admin-jwt-token>"
+
+List Vouchers
+Route: GET /api/admin/vouchers
+
+Service Method: listVouchers
+
+cURL:
+bash
+
+curl -X GET http://localhost:5000/api/admin/vouchers \
+-H "Authorization: Bearer <admin-jwt-token>"
+
+List Users
+Route: GET /api/admin/users
+
+Service Method: listUsers
+
+cURL:
+bash
+
+curl -X GET "http://localhost:5000/api/admin/users?role=CUSTOMER&email=john@example.com" \
+-H "Authorization: Bearer <admin-jwt-token>"
+
+Manage Delivery Rep
+Route: PATCH /api/admin/delivery-rep
+
+Service Method: manageDeliveryRep
+
+cURL:
+bash
+
+curl -X PATCH http://localhost:5000/api/admin/delivery-rep \
+-H "Content-Type: application/json" \
+-H "Authorization: Bearer <admin-jwt-token>" \
+-d '{"userId":"user123","accountBalance":5000,"avgRating":4.5,"credentialsVerified":true}'
+
+Update Permissions
+Route: PATCH /api/admin/permissions
+
+Service Method: updatePermissions
+
+cURL:
+bash
+
+curl -X PATCH http://localhost:5000/api/admin/permissions \
+-H "Content-Type: application/json" \
+-H "Authorization: Bearer <admin-jwt-token>" \
+-d '{"userId":"user123","permissions":{"canManageUsers":true}}'
+
+Additional Note:
+listAvailableVouchers is not directly mapped to an admin controller endpoint but could be used in a customer-facing route (e.g., /api/wallet/vouchers).
+
+2. Diesel Service (DieselService)
+File: Second code block
+Mapped Endpoints (from Diesel Controller):
+Get Diesel Stations
+Route: GET /api/diesel/stations
+
+Service Method: getDieselStations
+
+cURL:
+bash
+
+curl -X GET http://localhost:5000/api/diesel/stations \
+-H "Authorization: Bearer <your-jwt-token>"
+
+Get Vendor Details
+Route: GET /api/diesel/vendors/:vendorId
+
+Service Method: getVendorDetails
+
+cURL:
+bash
+
+curl -X GET http://localhost:5000/api/diesel/vendors/vendor123 \
+-H "Authorization: Bearer <your-jwt-token>"
+
+Create Diesel Order
+Route: POST /api/diesel/orders
+
+Service Method: createDieselOrder
+
+cURL:
+bash
+
+curl -X POST http://localhost:5000/api/diesel/orders \
+-H "Content-Type: application/json" \
+-H "Authorization: Bearer <your-jwt-token>" \
+-d '{"stationId":"station123","liters":50,"deliveryAddress":"123 Main St","paymentMethod":"Wallet","voucherCode":"DISCOUNT10"}'
+
+Process Payment
+Route: POST /api/diesel/payments
+
+Service Method: processPayment
+
+cURL:
+bash
+
+curl -X POST http://localhost:5000/api/diesel/payments \
+-H "Content-Type: application/json" \
+-H "Authorization: Bearer <your-jwt-token>" \
+-d '{"orderId":"order123","paymentMethod":"Wallet","voucherCode":"DISCOUNT10"}'
+
+Verify Payment
+Route: POST /api/diesel/payments/verify
+
+Service Method: verifyPayment
+
+cURL:
+bash
+
+curl -X POST http://localhost:5000/api/diesel/payments/verify \
+-H "Content-Type: application/json" \
+-H "Authorization: Bearer <your-jwt-token>" \
+-d '{"orderId":"order123","transactionRef":"tx123"}'
+
+3. Electricity Service (ElectricityService)
+File: Third code block
+Mapped Endpoints (from Electricity Controller):
+Get Providers
+Route: GET /api/electricity/providers
+
+Service Method: getElectricityProviders
+
+cURL:
+bash
+
+curl -X GET http://localhost:5000/api/electricity/providers \
+-H "Authorization: Bearer <your-jwt-token>"
+
+Get Meter Info
+Route: POST /api/electricity/meter-info
+
+Service Method: getMeterInfo
+
+cURL:
+bash
+
+curl -X POST http://localhost:5000/api/electricity/meter-info \
+-H "Content-Type: application/json" \
+-H "Authorization: Bearer <your-jwt-token>" \
+-d '{"billerCode":"biller123","meterNumber":"123456789012"}'
+
+Get Saved Meter Numbers
+Route: GET /api/electricity/saved-meters
+
+Service Method: getSavedMeterNumbers
+
+cURL:
+bash
+
+curl -X GET http://localhost:5000/api/electricity/saved-meters \
+-H "Authorization: Bearer <your-jwt-token>"
+
+Create Order
+Route: POST /api/electricity/orders
+
+Service Method: createElectricityOrder
+
+cURL:
+bash
+
+curl -X POST http://localhost:5000/api/electricity/orders \
+-H "Content-Type: application/json" \
+-H "Authorization: Bearer <your-jwt-token>" \
+-d '{"providerId":1,"meterNumber":"123456789012","paymentAmount":1000,"paymentMethod":"Wallet","meterType":"prepaid"}'
+
+Process Payment
+Route: POST /api/electricity/payments
+
+Service Method: processPayment
+
+cURL:
+bash
+
+curl -X POST http://localhost:5000/api/electricity/payments \
+-H "Content-Type: application/json" \
+-H "Authorization: Bearer <your-jwt-token>" \
+-d '{"orderId":"order123","paymentMethod":"Wallet","paymentJwt":"jwt-token"}'
+
+Verify Payment
+Route: POST /api/electricity/payments/verify
+
+Service Method: verifyPayment
+
+cURL:
+bash
+
+curl -X POST http://localhost:5000/api/electricity/payments/verify \
+-H "Content-Type: application/json" \
+-H "Authorization: Bearer <your-jwt-token>" \
+-d '{"orderId":"order123","transactionRef":"tx123"}'
+
+4. Gas Service (GasService)
+File: Fourth code block
+Mapped Endpoints (from Gas Controller):
+Get Gas Stations
+Route: GET /api/gas/stations
+
+Service Method: getGasStations
+
+cURL:
+bash
+
+curl -X GET http://localhost:5000/api/gas/stations \
+-H "Authorization: Bearer <your-jwt-token>"
+
+Get Vendor Details
+Route: GET /api/gas/vendors/:vendorId
+
+Service Method: getVendorDetails
+
+cURL:
+bash
+
+curl -X GET http://localhost:5000/api/gas/vendors/vendor123 \
+-H "Authorization: Bearer <your-jwt-token>"
+
+Create Gas Order
+Route: POST /api/gas/orders
+
+Service Method: createGasOrder
+
+cURL:
+bash
+
+curl -X POST http://localhost:5000/api/gas/orders \
+-H "Content-Type: application/json" \
+-H "Authorization: Bearer <your-jwt-token>" \
+-d '{"stationId":"station123","sizeId":"size123","deliveryAddress":"123 Main St","paymentMethod":"Wallet","voucherCode":"DISCOUNT10"}'
+
+Process Payment
+Route: POST /api/gas/payments
+
+Service Method: processPayment
+
+cURL:
+bash
+
+curl -X POST http://localhost:5000/api/gas/payments \
+-H "Content-Type: application/json" \
+-H "Authorization: Bearer <your-jwt-token>" \
+-d '{"orderId":"order123","paymentMethod":"Wallet","voucherCode":"DISCOUNT10"}'
+
+Verify Payment
+Route: POST /api/gas/payments/verify
+
+Service Method: verifyPayment
+
+cURL:
+bash
+
+curl -X POST http://localhost:5000/api/gas/payments/verify \
+-H "Content-Type: application/json" \
+-H "Authorization: Bearer <your-jwt-token>" \
+-d '{"orderId":"order123","transactionRef":"tx123"}'
+
+5. Payment Service (PaymentService)
+File: Fifth code block
+Mapped Endpoints (from Payment Controller):
+Initiate Payment
+Route: POST /api/payments/initiate
+
+Service Method: processPayment
+
+cURL:
+bash
+
+curl -X POST http://localhost:5000/api/payments/initiate \
+-H "Content-Type: application/json" \
+-H "Authorization: Bearer <your-jwt-token>" \
+-d '{"amount":1000,"paymentMethod":"Flutterwave","productType":"diesel","transactionRef":"tx123"}'
+
+Handle Webhook
+Route: POST /api/payments/webhook
+
+Service Method: verifyWebhook
+
+cURL (Typically called by payment provider, example for testing):
+bash
+
+curl -X POST http://localhost:5000/api/payments/webhook \
+-H "Content-Type: application/json" \
+-H "x-flutterwave-signature: <signature>" \
+-d '{"data":{"tx_ref":"tx123","status":"successful"}}'
+
+Handle Callback
+Route: GET /api/payments/callback
+
+Service Method: Implicitly tied to verifyPayment
+
+cURL:
+bash
+
+curl -X GET "http://localhost:5000/api/payments/callback?transaction_id=tx123&status=success" \
+-H "Authorization: Bearer <your-jwt-token>"
+
+6. Petrol Service (PetrolService)
+File: Sixth code block
+Mapped Endpoints (from Petrol Controller):
+Get Petrol Stations
+Route: GET /api/petrol/stations
+
+Service Method: getPetrolStations
+
+cURL:
+bash
+
+curl -X GET http://localhost:5000/api/petrol/stations \
+-H "Authorization: Bearer <your-jwt-token>"
+
+Get Vendor Details
+Route: GET /api/petrol/vendors/:vendorId
+
+Service Method: getVendorDetails
+
+cURL:
+bash
+
+curl -X GET http://localhost:5000/api/petrol/vendors/vendor123 \
+-H "Authorization: Bearer <your-jwt-token>"
+
+Create Petrol Order
+Route: POST /api/petrol/orders
+
+Service Method: createPetrolOrder
+
+cURL:
+bash
+
+curl -X POST http://localhost:5000/api/petrol/orders \
+-H "Content-Type: application/json" \
+-H "Authorization: Bearer <your-jwt-token>" \
+-d '{"stationId":"station123","liters":50,"deliveryAddress":"123 Main St","paymentMethod":"Wallet","voucherCode":"DISCOUNT10"}'
+
+Process Payment
+Route: POST /api/petrol/payments
+
+Service Method: processPayment
+
+cURL:
+bash
+
+curl -X POST http://localhost:5000/api/petrol/payments \
+-H "Content-Type: application/json" \
+-H "Authorization: Bearer <your-jwt-token>" \
+-d '{"orderId":"order123","paymentMethod":"Wallet","voucherCode":"DISCOUNT10"}'
+
+Verify Payment
+Route: POST /api/petrol/payments/verify
+
+Service Method: verifyPayment
+
+cURL:
+bash
+
+curl -X POST http://localhost:5000/api/petrol/payments/verify \
+-H "Content-Type: application/json" \
+-H "Authorization: Bearer <your-jwt-token>" \
+-d '{"orderId":"order123","transactionRef":"tx123"}'
+
+7. Wallet Service (WalletService)
+File: Seventh code block
+Mapped Endpoints (from Wallet Controller):
+Get Balance
+Route: GET /api/wallet/balance
+
+Service Method: getBalance
+
+cURL:
+bash
+
+curl -X GET http://localhost:5000/api/wallet/balance \
+-H "Authorization: Bearer <your-jwt-token>"
+
+Deposit
+Route: POST /api/wallet/deposit
+
+Service Method: depositFunds
+
+cURL:
+bash
+
+curl -X POST http://localhost:5000/api/wallet/deposit \
+-H "Content-Type: application/json" \
+-H "Authorization: Bearer <your-jwt-token>" \
+-d '{"amount":1000,"petrolOrderId":"order123"}'
+
+Pay With Wallet
+Route: POST /api/wallet/pay
+
+Service Method: payWithWallet
+
+cURL:
+bash
+
+curl -X POST http://localhost:5000/api/wallet/pay \
+-H "Content-Type: application/json" \
+-H "Authorization: Bearer <your-jwt-token>" \
+-d '{"amount":1000,"orderId":"order123","orderType":"diesel","serviceCharge":100,"vatRate":0.075,"voucherCode":"DISCOUNT10"}'
+
+Refund Funds
+Route: POST /api/wallet/refund
+
+Service Method: refundFunds
+
+cURL:
+bash
+
+curl -X POST http://localhost:5000/api/wallet/refund \
+-H "Content-Type: application/json" \
+-H "Authorization: Bearer <your-jwt-token>" \
+-d '{"amount":1000,"orderId":"order123","orderType":"diesel"}'
+
+Get Transactions
+Route: GET /api/wallet/transactions
+
+Service Method: getTransactions
+
+cURL:
+bash
+
+curl -X GET http://localhost:5000/api/wallet/transactions \
+-H "Authorization: Bearer <your-jwt-token>"
+
+Top Up
+Route: POST /api/wallet/topup
+
+Service Method: topUp
+
+cURL:
+bash
+
+curl -X POST http://localhost:5000/api/wallet/topup \
+-H "Content-Type: application/json" \
+-H "Authorization: Bearer <your-jwt-token>" \
+-d '{"amount":1000,"paymentMethod":"flutterwave","transactionReference":"tx123"}'
+
+Redeem Voucher
+Route: POST /api/wallet/voucher/redeem
+
+Service Method: redeemVoucher
+
+cURL:
+bash
+
+curl -X POST http://localhost:5000/api/wallet/voucher/redeem \
+-H "Content-Type: application/json" \
+-H "Authorization: Bearer <your-jwt-token>" \
+-d '{"voucherCode":"VOUCHER100"}'
+
+Validate Meter
+Route: POST /api/wallet/meter/validate
+
+Service Method: validateMeterNumber
+
+cURL:
+bash
+
+curl -X POST http://localhost:5000/api/wallet/meter/validate \
+-H "Content-Type: application/json" \
+-H "Authorization: Bearer <your-jwt-token>" \
+-d '{"meterNumber":"123456789012","providerId":1}'
+
+Flutterwave Callback
+Route: POST /api/wallet/flutterwave-callback
+
+Service Method: handleFlutterwaveCallback
+
+cURL (Typically called by Flutterwave):
+bash
+
+curl -X POST http://localhost:5000/api/wallet/flutterwave-callback \
+-H "Content-Type: application/json" \
+-H "x-flutterwave-signature: <signature>" \
+-d '{"tx_ref":"tx123","status":"successful","amount":1000}'
+
+Apply Voucher
+Route: POST /api/wallet/voucher/apply
+
+Service Method: applyVoucher
+
+cURL:
+bash
+
+curl -X POST http://localhost:5000/api/wallet/voucher/apply \
+-H "Content-Type: application/json" \
+-H "Authorization: Bearer <your-jwt-token>" \
+-d '{"voucherCode":"DISCOUNT10","orderType":"diesel"}'
+
+
+
+Notes
+
+Authentication: All endpoints require a JWT token via Authorization: Bearer <token> obtained from /api/auth/login.
+Example to get token:
+bash
+
+curl -X POST http://localhost:5000/api/auth/login \
+-H "Content-Type: application/json" \
+-d '{"email":"jewettswift@gmail.com","password":"customer123"}'
+
+Error Handling: Expect JSON responses with an error field on failure (e.g., {"error": "Insufficient wallet balance"}).
+
+Payment Methods: Supported methods vary by endpoint (e.g., Wallet, Transfer, Flutterwave). Check specific service logic for restrictions.
+
+Voucher Usage: Use DISCOUNT10 or similar codes from /api/admin/vouchers creation for testing discounts.
+
+Testing External APIs: For Flutterwave-related endpoints (e.g., /api/payments/initiate, /api/wallet/topup), mock responses or use a sandbox environment unless you have a live key.
+
+Dynamic Fields: Replace placeholders like <orderId>, <vendorId>, <your-jwt-token> with actual values from your database or prior API calls.
+
+
+goto http://localhost:5000/api-docs/#/ - replacing the localhost with the real server IP

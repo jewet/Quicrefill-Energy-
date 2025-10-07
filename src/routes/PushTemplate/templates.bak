@@ -1,0 +1,502 @@
+import express, { Request, Response, NextFunction } from "express";
+import { PrismaClient, Role } from "@prisma/client";
+import { PushTemplate } from "../../models/messageModel";
+import { authorizeRoles } from "../../middlewares/authentication";
+import { KnownEventTypes, RoleEventApplicability } from "../../utils/EventTypeDictionary";
+
+const router = express.Router();
+const prisma = new PrismaClient();
+
+/**
+ * @swagger
+ * components:
+ *   schemas:
+ *     PushTemplate:
+ *       type: object
+ *       required:
+ *         - name
+ *         - title
+ *         - body
+ *         - roles
+ *         - updatedBy
+ *       properties:
+ *         name:
+ *           type: string
+ *           description: The name of the push template
+ *           example: "New Order Notification"
+ *         title:
+ *           type: string
+ *           description: The title of the push notification
+ *           example: "New Order Placed"
+ *         body:
+ *           type: string
+ *           description: The body content of the push notification
+ *           example: "Your order #{orderId} has been placed successfully."
+ *         roles:
+ *           type: array
+ *           items:
+ *             type: string
+ *             enum: [CUSTOMER, VENDOR, DELIVERY_REP, ADMIN, MANAGER, SUPERVISOR]
+ *           description: List of user roles eligible to receive the notification
+ *           example: ["CUSTOMER", "VENDOR"]
+ *         eventTypeId:
+ *           type: string
+ *           description: The ID of the associated event type (optional)
+ *           example: "event_12345"
+ *         updatedBy:
+ *           type: string
+ *           description: The ID of the user who created or updated the template
+ *           example: "user_67890"
+ *         isActive:
+ *           type: boolean
+ *           description: Whether the template is active
+ *           example: true
+ *     PushTemplateResponse:
+ *       type: object
+ *       properties:
+ *         message:
+ *           type: string
+ *           description: Success message
+ *           example: "Push template created"
+ *         template:
+ *           $ref: '#/components/schemas/PushTemplate'
+ *     PushTemplateListResponse:
+ *       type: array
+ *       items:
+ *         type: object
+ *         properties:
+ *           id:
+ *             type: string
+ *             description: The ID of the push template
+ *             example: "template_12345"
+ *           name:
+ *             type: string
+ *             description: The name of the push template
+ *             example: "New Order Notification"
+ *           title:
+ *             type: string
+ *             description: The title of the push notification
+ *             example: "New Order Placed"
+ *           body:
+ *             type: string
+ *             description: The body content of the push notification
+ *             example: "Your order #{orderId} has been placed successfully."
+ *           roles:
+ *             type: array
+ *             items:
+ *               type: string
+ *               enum: [CUSTOMER, VENDOR, DELIVERY_REP, ADMIN, MANAGER, SUPERVISOR]
+ *             description: List of user roles eligible to receive the notification
+ *             example: ["CUSTOMER", "VENDOR"]
+ *           eventTypeId:
+ *             type: string
+ *             description: The ID of the associated event type
+ *             example: "event_12345"
+ *           updatedBy:
+ *             type: string
+ *             description: The ID of the user who updated the template
+ *             example: "user_67890"
+ *           isActive:
+ *             type: boolean
+ *             description: Whether the template is active
+ *             example: true
+ *           eventType:
+ *             type: object
+ *             properties:
+ *               id:
+ *                 type: string
+ *                 description: The ID of the event type
+ *                 example: "event_12345"
+ *               name:
+ *                 type: string
+ *                 description: The name of the event type
+ *                 example: "NEW_ORDER"
+ *           user:
+ *             type: object
+ *             properties:
+ *               id:
+ *                 type: string
+ *                 description: The ID of the user who updated the template
+ *                 example: "user_67890"
+ *               name:
+ *                 type: string
+ *                 description: The name of the user who updated the template
+ *                 example: "John Doe"
+ *     DeleteResponse:
+ *       type: object
+ *       properties:
+ *         message:
+ *           type: string
+ *           description: Success message
+ *           example: "Push template deleted"
+ *     ErrorResponse:
+ *       type: object
+ *       properties:
+ *         error:
+ *           type: string
+ *           description: Error message describing the issue
+ *           example: "Missing required fields"
+ *   securitySchemes:
+ *     bearerAuth:
+ *       type: http
+ *       scheme: bearer
+ *       bearerFormat: JWT
+ */
+
+/**
+ * @swagger
+ * /templates/push:
+ *   post:
+ *     summary: Create a new push template
+ *     tags: [PushTemplates]
+ *     description: Creates a new push notification template. Requires ADMIN, MANAGER, or SUPERVISOR role.
+ *     security:
+ *       - bearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             $ref: '#/components/schemas/PushTemplate'
+ *     responses:
+ *       201:
+ *         description: Push template created successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/PushTemplateResponse'
+ *       400:
+ *         description: Invalid request payload, eventTypeId, updatedBy, or roles
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
+ *       401:
+ *         description: Unauthorized access
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
+ *       403:
+ *         description: Forbidden - insufficient role permissions
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
+ *       500:
+ *         description: Internal server error
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
+ */
+router.post(
+  "/push",
+  authorizeRoles([Role.ADMIN, Role.MANAGER, Role.SUPERVISOR]),
+  async (req: Request<{}, {}, Omit<PushTemplate, "id" | "updatedAt">>, res: Response, next: NextFunction) => {
+    try {
+      const { name, title, body, roles, eventTypeId, updatedBy, isActive = true } = req.body;
+
+      // Validate inputs
+      if (!name || !title || !body || !roles?.length || !updatedBy) {
+        res.status(400).json({ error: "Missing required fields" });
+        return;
+      }
+
+      // Validate eventTypeId and roles
+      if (eventTypeId) {
+        const eventType = await prisma.eventType.findUnique({ where: { id: eventTypeId } });
+        if (!eventType) {
+          res.status(400).json({ error: "Invalid eventTypeId" });
+          return;
+        }
+
+        // Validate roles against RoleEventApplicability
+        const applicableRoles = RoleEventApplicability[eventType.name as KnownEventTypes] || [];
+        const invalidRoles = roles.filter((role: Role) => !applicableRoles.includes(role));
+        if (invalidRoles.length) {
+          res.status(400).json({
+            error: `Roles ${invalidRoles.join(", ")} are not applicable for event type ${eventType.name}`,
+          });
+          return;
+        }
+      }
+
+      if (!(await prisma.user.findUnique({ where: { id: updatedBy } }))) {
+        res.status(400).json({ error: "Invalid updatedBy user ID" });
+        return;
+      }
+
+      const template = await prisma.pushTemplate.create({
+        data: {
+          name,
+          title,
+          body,
+          roles,
+          eventTypeId,
+          updatedBy,
+          isActive,
+        },
+      });
+
+      res.status(201).json({ message: "Push template created", template });
+    } catch (error) {
+      next(error); // Pass errors to Express error handler
+    }
+  }
+);
+
+/**
+ * @swagger
+ * /templates/push/{id}:
+ *   put:
+ *     summary: Update an existing push template
+ *     tags: [PushTemplates]
+ *     description: Updates a push notification template by ID. Requires ADMIN, MANAGER, or SUPERVISOR role.
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: The ID of the push template to update
+ *         example: "template_12345"
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             $ref: '#/components/schemas/PushTemplate'
+ *     responses:
+ *       200:
+ *         description: Push template updated successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/PushTemplateResponse'
+ *       400:
+ *         description: Invalid request payload, eventTypeId, updatedBy, or roles
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
+ *       401:
+ *         description: Unauthorized access
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
+ *       403:
+ *         description: Forbidden - insufficient role permissions
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
+ *       404:
+ *         description: Push template not found
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
+ *       500:
+ *         description: Internal server error
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
+ */
+router.put(
+  "/push/:id",
+  authorizeRoles([Role.ADMIN, Role.MANAGER, Role.SUPERVISOR]),
+  async (req: Request<{ id: string }, {}, Omit<PushTemplate, "id" | "updatedAt">>, res: Response, next: NextFunction) => {
+    try {
+      const { id } = req.params;
+      const { name, title, body, roles, eventTypeId, updatedBy, isActive } = req.body;
+
+      // Validate inputs
+      if (!name || !title || !body || !roles?.length || !updatedBy) {
+        res.status(400).json({ error: "Missing required fields" });
+        return;
+      }
+
+      // Validate eventTypeId and roles
+      if (eventTypeId) {
+        const eventType = await prisma.eventType.findUnique({ where: { id: eventTypeId } });
+        if (!eventType) {
+          res.status(400).json({ error: "Invalid eventTypeId" });
+          return;
+        }
+
+        // Validate roles against RoleEventApplicability
+        const applicableRoles = RoleEventApplicability[eventType.name as KnownEventTypes] || [];
+        const invalidRoles = roles.filter((role: Role) => !applicableRoles.includes(role));
+        if (invalidRoles.length) {
+          res.status(400).json({
+            error: `Roles ${invalidRoles.join(", ")} are not applicable for event type ${eventType.name}`,
+          });
+          return;
+        }
+      }
+
+      if (!(await prisma.user.findUnique({ where: { id: updatedBy } }))) {
+        res.status(400).json({ error: "Invalid updatedBy user ID" });
+        return;
+      }
+
+      const template = await prisma.pushTemplate.update({
+        where: { id },
+        data: {
+          name,
+          title,
+          body,
+          roles,
+          eventTypeId,
+          updatedBy,
+          isActive,
+        },
+      });
+
+      res.status(200).json({ message: "Push template updated", template });
+    } catch (error) {
+      next(error);
+    }
+  }
+);
+
+/**
+ * @swagger
+ * /templates/push:
+ *   get:
+ *     summary: List push templates
+ *     tags: [PushTemplates]
+ *     description: Retrieves a list of active push notification templates, optionally filtered by eventTypeId or role. Requires ADMIN, MANAGER, or SUPERVISOR role.
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: query
+ *         name: eventTypeId
+ *         schema:
+ *           type: string
+ *         description: Filter templates by event type ID
+ *         example: "event_12345"
+ *       - in: query
+ *         name: role
+ *         schema:
+ *           type: string
+ *           enum: [CUSTOMER, VENDOR, DELIVERY_REP, ADMIN, MANAGER, SUPERVISOR]
+ *         description: Filter templates by role
+ *         example: "CUSTOMER"
+ *     responses:
+ *       200:
+ *         description: List of push templates retrieved successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/PushTemplateListResponse'
+ *       401:
+ *         description: Unauthorized access
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
+ *       403:
+ *         description: Forbidden - insufficient role permissions
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
+ *       500:
+ *         description: Internal server error
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
+ */
+router.get(
+  "/push",
+  authorizeRoles([Role.ADMIN, Role.MANAGER, Role.SUPERVISOR]),
+  async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const { eventTypeId, role } = req.query;
+      const templates = await prisma.pushTemplate.findMany({
+        where: {
+          eventTypeId: eventTypeId ? String(eventTypeId) : undefined,
+          roles: role ? { has: role as Role } : undefined,
+          isActive: true,
+        },
+        include: { eventType: true, user: { select: { id: true, name: true } } },
+      });
+
+      res.status(200).json(templates);
+    } catch (error) {
+      next(error);
+    }
+  }
+);
+
+/**
+ * @swagger
+ * /templates/push/{id}:
+ *   delete:
+ *     summary: Delete a push template
+ *     tags: [PushTemplates]
+ *     description: Deletes a push notification template by ID. Requires ADMIN, MANAGER, or SUPERVISOR role.
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: The ID of the push template to delete
+ *         example: "template_12345"
+ *     responses:
+ *       200:
+ *         description: Push template deleted successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/DeleteResponse'
+ *       401:
+ *         description: Unauthorized access
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
+ *       403:
+ *         description: Forbidden - insufficient role permissions
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
+ *       404:
+ *         description: Push template not found
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
+ *       500:
+ *         description: Internal server error
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
+ */
+router.delete(
+  "/push/:id",
+  authorizeRoles([Role.ADMIN, Role.MANAGER, Role.SUPERVISOR]),
+  async (req: Request<{ id: string }>, res: Response, next: NextFunction) => {
+    try {
+      const { id } = req.params;
+      await prisma.pushTemplate.delete({ where: { id } });
+      res.status(200).json({ message: "Push template deleted" });
+    } catch (error) {
+      next(error);
+    }
+  }
+);
+
+export default router;

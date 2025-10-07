@@ -1,0 +1,74 @@
+// customer-service/src/routes/electRoutes.ts
+
+import { Router, Request, Response, NextFunction } from 'express';
+import { authenticationMiddleware, authorizeRoles } from '../middlewares/authentication';
+import electricityController from '../controllers/electricityController'; // Import the instance
+import { Role } from '@prisma/client';
+
+const electRouter: Router = Router();
+
+// Helper function for async routes
+const asyncHandler = (
+  fn: (req: Request, res: Response, next: NextFunction) => Promise<void>
+) => (req: Request, res: Response, next: NextFunction): Promise<void> =>
+  Promise.resolve(fn(req, res, next)).catch(next);
+
+// Routes restricted to CUSTOMER role
+electRouter.get(
+  '/home',
+  authenticationMiddleware,
+  authorizeRoles([Role.CUSTOMER]),
+  asyncHandler(electricityController.getHomeData.bind(electricityController))
+);
+
+electRouter.get(
+  '/providers',
+  authenticationMiddleware,
+  authorizeRoles([Role.CUSTOMER]),
+  asyncHandler(electricityController.getProviders.bind(electricityController))
+);
+
+electRouter.post(
+  '/meter-info',
+  authenticationMiddleware,
+  authorizeRoles([Role.CUSTOMER]),
+  asyncHandler(electricityController.getMeterInfo.bind(electricityController))
+);
+
+electRouter.get(
+  '/saved-meters',
+  authenticationMiddleware,
+  authorizeRoles([Role.CUSTOMER]),
+  asyncHandler(electricityController.getSavedMeterNumbers.bind(electricityController))
+);
+
+electRouter.post(
+  '/order',
+  authenticationMiddleware,
+  authorizeRoles([Role.CUSTOMER]),
+  asyncHandler(electricityController.createOrder.bind(electricityController))
+);
+
+electRouter.post(
+  '/pay',
+  authenticationMiddleware,
+  authorizeRoles([Role.CUSTOMER]),
+  asyncHandler(electricityController.processPayment.bind(electricityController))
+);
+
+electRouter.post(
+  '/verify',
+  authenticationMiddleware,
+  authorizeRoles([Role.CUSTOMER]),
+  asyncHandler(electricityController.verifyPayment.bind(electricityController))
+);
+
+// Route restricted to ADMIN role
+electRouter.put(
+  '/provider/service-fee',
+  authenticationMiddleware,
+  authorizeRoles([Role.ADMIN]),
+  asyncHandler(electricityController.updateProviderServiceFee.bind(electricityController))
+);
+
+export { electRouter };
